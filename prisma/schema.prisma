@@ -1,0 +1,128 @@
+// ============================================================
+//  Job Application Assistant — v1 data model
+//  Stack: PostgreSQL + Prisma (matches your existing toolset)
+// ============================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================================
+//  ENUMS
+//  Using enums instead of free-text strings means the DATABASE
+//  itself rejects invalid values, and your TypeScript types are
+//  auto-narrowed by Prisma. This is "make illegal states
+//  unrepresentable" — a whole class of bugs becomes impossible.
+// ============================================================
+
+// How the posting entered the system. This is the ONLY place the
+// two input shapes (pasted message vs link) differ — after ingest
+// everything downstream works on plain text. (Adapter pattern.)
+enum JobSource {
+  MESSAGE // user pasted raw text (e.g. a tweet / job blurb)
+  URL     // user pasted a career-portal link we fetch + parse
+}
+
+// How you actually apply. Decided during the extraction step; this
+// is the routing decision that picks which artifact gets generated.
+enum ApplyMethod {
+  EMAIL   // posting says "send your CV to careers@company.com"
+  PORTAL  // posting links to a career page / ATS
+  UNKNOWN // extraction couldn't decide — surfaced for your review
+}
+
+// The application lifecycle — a state machine. A job moves forward
+// through these. Kept deliberately small for v1; easy to extend.
+enum ApplicationStatus {
+  SAVED     // ingested; nothing generated yet
+  DRAFTED   // material generated, waiting for you to act
+  APPLIED   // you confirmed you applied
+  INTERVIEW // reached interview stage
+  CLOSED    // rejected / ghosted / withdrawn — terminal state
+}
+
+// Referral is a SEPARATE axis from application status: you can be
+// APPLIED and still chasing a referral. Folding both into one enum
+// would create impossible combinations (APPLIED_AND_REFERRAL_X...).
+// Two independent concerns => two fields. This is intentional.
+enum ReferralStatus {
+  NONE           // not pursuing a referral for this job
+  TEMPLATE_READY // referral note generated, not yet sent
+  REQUESTED      // you sent the referral ask
+  RECEIVED       // referral confirmed
+}
+
+// What kind of generated text an artifact holds.
+enum ArtifactType {
+  EMAIL_DRAFT      // tailored application email (EMAIL path)
+  REFERRAL_REQUEST // message asking an employee for a referral
+  CONNECTION_NOTE  // LinkedIn connect note (keep < 300 chars)
+}
+
+// ============================================================
+//  MODELS
+// ============================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+
+  jobs Job[] // one user owns many tracked jobs
+}
+
+model Job {
+  id String @id @default(cuid())
+
+  // --- provenance: where this came from ---
+  source    JobSource
+  rawText   String  @db.Text // the pasted message OR the fetched page text, kept VERBATIM. Why keep it? So you can re-run extraction later (after improving your prompt) WITHOUT re-fetching. Re-extraction becomes idempotent.
+  sourceUrl String?          // populated only when source = URL
+
+  // --- structured fields, filled by the LLM extraction step ---
+  company   String?
+  title     String?
+  location  String?
+  jdSummary String? @db.Text // short normalized summary shown on the dashboard card
+
+  // --- the routing decision ---
+  applyMethod  ApplyMethod @default(UNKNOWN)
+  contactEmail String?     // set when applyMethod = EMAIL
+  portalUrl    String?     // set when applyMethod = PORTAL (may differ from sourceUrl, e.g. a tweet links to a Greenhouse page)
+
+  // --- the two independent status axes (see enum comments) ---
+  applicationStatus ApplicationStatus @default(SAVED)
+  referralStatus    ReferralStatus    @default(NONE)
+
+  // --- relations ---
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade) // delete a user => their jobs go too
+  artifacts GeneratedArtifact[] // the drafts generated for this job
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, applicationStatus]) // the dashboard's main query is "this user's jobs, filtered by status" — this composite index makes it fast instead of a full table scan
+}
+
+model GeneratedArtifact {
+  id      String       @id @default(cuid())
+  type    ArtifactType
+  content String       @db.Text // the generated draft text itself
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // A job can hold several artifacts of the same type over time
+  // (each regeneration is a new row). The newest per type is what
+  // the UI displays — so you keep a history instead of overwriting.
+  @@index([jobId, type])
+}
