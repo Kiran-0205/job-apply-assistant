@@ -40,7 +40,7 @@ Return no markdown fences, no explanation — raw JSON only.`;
 
 async function callLLM(jobText: string): Promise<Extraction> {
   const message = await client.messages.create({
-    model: "claude-opus-4-8",
+    model: "claude-haiku-4-5",
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: jobText.slice(0, 15_000) }],

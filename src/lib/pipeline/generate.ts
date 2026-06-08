@@ -19,7 +19,7 @@ interface JobContext {
 
 async function llm(system: string, user: string): Promise<string> {
   const msg = await client.messages.create({
-    model: "claude-opus-4-8",
+    model: "claude-haiku-4-5",
     max_tokens: 2048,
     thinking: { type: "adaptive" },
     system,
