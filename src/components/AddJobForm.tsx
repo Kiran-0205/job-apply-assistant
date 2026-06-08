@@ -85,7 +85,7 @@ export function AddJobForm() {
       <button
         type="submit"
         disabled={loading || !value.trim()}
-        className="mt-3 w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="mt-3 w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Extracting…" : "Add Job"}
       </button>

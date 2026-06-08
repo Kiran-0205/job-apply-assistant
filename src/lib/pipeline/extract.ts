@@ -1,9 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { ApplyMethod, JobSource } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Zod schema for LLM output — validated before any DB write
 const ExtractionSchema = z.object({
@@ -39,17 +39,16 @@ Rules for applyMethod:
 Return no markdown fences, no explanation — raw JSON only.`;
 
 async function callLLM(jobText: string): Promise<Extraction> {
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: jobText.slice(0, 15_000) }],
+  const response = await client.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: jobText.slice(0, 15_000),
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      maxOutputTokens: 1024,
+    },
   });
 
-  const rawText = message.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("");
+  const rawText = response.text ?? "";
 
   // Strip any accidental markdown fences
   const cleaned = rawText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();

@@ -1,9 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { ArtifactType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PROFILE } from "@/lib/profile";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 interface JobContext {
   id: string;
@@ -18,18 +18,16 @@ interface JobContext {
 }
 
 async function llm(system: string, user: string): Promise<string> {
-  const msg = await client.messages.create({
-    model: "claude-haiku-4-5",
-    max_tokens: 2048,
-    thinking: { type: "adaptive" },
-    system,
-    messages: [{ role: "user", content: user }],
+  const response = await client.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: user,
+    config: {
+      systemInstruction: system,
+      maxOutputTokens: 2048,
+      thinkingConfig: { thinkingBudget: -1 },
+    },
   });
-  return msg.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("")
-    .trim();
+  return (response.text ?? "").trim();
 }
 
 function jobContextBlock(job: JobContext): string {
