@@ -40,7 +40,7 @@ Return no markdown fences, no explanation — raw JSON only.`;
 
 async function callLLM(jobText: string): Promise<Extraction> {
   const response = await client.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     contents: jobText.slice(0, 15_000),
     config: {
       systemInstruction: SYSTEM_PROMPT,

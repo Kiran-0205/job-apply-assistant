@@ -19,7 +19,7 @@ interface JobContext {
 
 async function llm(system: string, user: string): Promise<string> {
   const response = await client.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     contents: user,
     config: {
       systemInstruction: system,
