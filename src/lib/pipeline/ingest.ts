@@ -5,11 +5,14 @@ export type IngestResult =
   | { source: "MESSAGE"; text: string }
   | { source: "URL"; text: string; sourceUrl: string };
 
-// Minimum characters of extracted text before we consider a page actually readable
-const MIN_CONTENT_LENGTH = 300;
+// Minimum chars for the direct HTML fetch — a real job description is rarely shorter.
+// SPA shells often return 100–500 chars of meta/title text; those fall through to Jina.
+const MIN_DIRECT_CONTENT = 1_500;
 // If direct-fetched text exceeds this, the page is probably a JS SPA with large
 // config/JSON blobs leaked into the body — fall through to Jina.ai instead.
 const MAX_DIRECT_CONTENT = 50_000;
+// Minimum chars for a Jina.ai result to be considered usable.
+const MIN_JINA_CONTENT = 300;
 
 // Strip HTML to plain text using cheerio; preserves whitespace structure
 function htmlToText(html: string): string {
@@ -52,7 +55,7 @@ async function ingestUrl(url: string): Promise<IngestResult> {
   try {
     const html = await safeFetch(url);
     const extracted = htmlToText(html);
-    if (extracted.length >= MIN_CONTENT_LENGTH && extracted.length <= MAX_DIRECT_CONTENT) {
+    if (extracted.length >= MIN_DIRECT_CONTENT && extracted.length <= MAX_DIRECT_CONTENT) {
       text = extracted;
     }
     // If extracted is too large the page likely leaked JS config/JSON into body text;
@@ -65,7 +68,7 @@ async function ingestUrl(url: string): Promise<IngestResult> {
   if (text === null) {
     try {
       const jinaText = await fetchViaJina(url);
-      if (jinaText.length >= MIN_CONTENT_LENGTH) {
+      if (jinaText.length >= MIN_JINA_CONTENT) {
         text = jinaText;
       }
     } catch {
