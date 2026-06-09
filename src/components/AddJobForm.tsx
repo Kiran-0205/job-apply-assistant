@@ -7,7 +7,7 @@ type Tab = "text" | "url";
 
 export function AddJobForm() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("text");
+  const [tab, setTab] = useState<Tab>("url");
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,25 +37,28 @@ export function AddJobForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Add Job</h2>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-3">
-        {(["text", "url"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => { setTab(t); setValue(""); setError(null); }}
-            className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-              tab === t
-                ? "bg-indigo-100 text-indigo-700"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            {t === "text" ? "Paste text" : "URL"}
-          </button>
-        ))}
+    <form onSubmit={handleSubmit} className="bg-white border border-stone-200/80 rounded-2xl p-5 sm:p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-sm font-semibold text-stone-900">Add a posting</h2>
+          <p className="text-xs text-stone-400 mt-0.5">Paste the raw text or drop a career-page link — we&apos;ll extract the rest.</p>
+        </div>
+        <div className="flex gap-1 bg-stone-100 rounded-lg p-1">
+          {(["text", "url"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => { setTab(t); setValue(""); setError(null); }}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                tab === t
+                  ? "bg-white text-stone-900 shadow-sm"
+                  : "text-stone-400 hover:text-stone-600"
+              }`}
+            >
+              {t === "text" ? "Paste text" : "URL"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === "text" ? (
@@ -65,7 +68,7 @@ export function AddJobForm() {
           placeholder="Paste the job description here…"
           rows={6}
           required
-          className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full border border-stone-200 rounded-xl p-3.5 text-sm text-stone-800 placeholder:text-stone-400 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow"
         />
       ) : (
         <input
@@ -74,20 +77,20 @@ export function AddJobForm() {
           onChange={(e) => setValue(e.target.value)}
           placeholder="https://careers.company.com/job/123"
           required
-          className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full border border-stone-200 rounded-xl p-3.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow"
         />
       )}
 
       {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <p className="mt-2.5 text-sm text-rose-600">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={loading || !value.trim()}
-        className="mt-3 w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="mt-3.5 w-full bg-stone-900 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
       >
-        {loading ? "Extracting…" : "Add Job"}
+        {loading ? "Extracting…" : "Add job"}
       </button>
     </form>
   );

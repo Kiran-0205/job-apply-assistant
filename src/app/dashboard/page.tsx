@@ -1,125 +1,128 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AddJobForm } from "@/components/AddJobForm";
-import { ApplicationStatus } from "@prisma/client";
+import { DeleteJobIcon } from "@/components/DeleteJobIcon";
 
 const DEMO_USER_EMAIL = "saikiran@example.com";
 
-const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  SAVED: "Saved",
-  DRAFTED: "Drafted",
-  APPLIED: "Applied",
-  INTERVIEW: "Interview",
-  CLOSED: "Closed",
+const METHOD_COLORS: Record<string, string> = {
+  EMAIL: "bg-emerald-50 text-emerald-700",
+  PORTAL: "bg-blue-50 text-blue-700",
+  UNKNOWN: "bg-stone-100 text-stone-500",
 };
 
-const STATUS_COLORS: Record<ApplicationStatus, string> = {
-  SAVED: "bg-gray-100 text-gray-600",
-  DRAFTED: "bg-blue-100 text-blue-700",
-  APPLIED: "bg-amber-100 text-amber-700",
-  INTERVIEW: "bg-purple-100 text-purple-700",
-  CLOSED: "bg-red-100 text-red-700",
-};
+const AVATAR_PALETTE = [
+  "bg-indigo-50 text-indigo-600",
+  "bg-emerald-50 text-emerald-600",
+  "bg-amber-50 text-amber-600",
+  "bg-rose-50 text-rose-600",
+  "bg-sky-50 text-sky-600",
+  "bg-violet-50 text-violet-600",
+  "bg-teal-50 text-teal-600",
+];
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>;
-}) {
-  const { status } = await searchParams;
-  const validStatuses = Object.values(ApplicationStatus);
-  const statusFilter =
-    status && validStatuses.includes(status as ApplicationStatus)
-      ? (status as ApplicationStatus)
-      : undefined;
+function avatarStyle(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
 
+function initial(name: string | null): string {
+  return (name?.trim()?.[0] ?? "?").toUpperCase();
+}
+
+function relativeTime(date: Date): string {
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+  const units: [number, string][] = [
+    [60, "s"],
+    [60, "m"],
+    [24, "h"],
+    [7, "d"],
+    [4.345, "w"],
+    [12, "mo"],
+    [Number.POSITIVE_INFINITY, "y"],
+  ];
+  let value = seconds;
+  for (const [size, label] of units) {
+    if (value < size) return value < 1 ? "just now" : `${Math.floor(value)}${label} ago`;
+    value /= size;
+  }
+  return "a while ago";
+}
+
+export default async function DashboardPage() {
   const user = await prisma.user.findUnique({ where: { email: DEMO_USER_EMAIL } });
   const jobs = user
     ? await prisma.job.findMany({
-        where: { userId: user.id, ...(statusFilter ? { applicationStatus: statusFilter } : {}) },
+        where: { userId: user.id },
         orderBy: { createdAt: "desc" },
         include: { artifacts: { select: { id: true }, orderBy: { createdAt: "desc" } } },
       })
     : [];
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-8">
-      <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Job Apply Assistant</h1>
-          <p className="text-sm text-zinc-500 mt-1">Prepare materials. You act. Nothing is sent automatically.</p>
-        </div>
-
+    <main className="flex-1 px-4 sm:px-6 py-10">
+      <div className="max-w-3xl mx-auto space-y-10">
         {/* Add job form */}
         <AddJobForm />
 
-        {/* Filter tabs */}
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/dashboard"
-            className={`px-3 py-1.5 text-sm rounded-full font-medium transition-colors ${
-              !statusFilter ? "bg-zinc-900 text-white" : "bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-400"
-            }`}
-          >
-            All
-          </Link>
-          {validStatuses.map((s) => (
-            <Link
-              key={s}
-              href={`/dashboard?status=${s}`}
-              className={`px-3 py-1.5 text-sm rounded-full font-medium transition-colors ${
-                statusFilter === s
-                  ? "bg-zinc-900 text-white"
-                  : "bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-400"
-              }`}
-            >
-              {STATUS_LABELS[s]}
-            </Link>
-          ))}
-        </div>
+        {/* Search history */}
+        <section>
+          <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">
+            Search history
+          </h2>
 
-        {/* Job list */}
-        {jobs.length === 0 ? (
-          <p className="text-sm text-zinc-400 text-center py-12">
-            No jobs yet — paste a posting above to get started.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {jobs.map((job) => (
-              <li key={job.id}>
-                <Link
-                  href={`/dashboard/jobs/${job.id}`}
-                  className="block bg-white border border-zinc-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-zinc-900 truncate">
-                        {job.company ?? "Unknown company"}
-                      </p>
-                      <p className="text-sm text-zinc-500 truncate mt-0.5">
+          {jobs.length === 0 ? (
+            <div className="border border-dashed border-stone-300 rounded-2xl py-16 text-center">
+              <p className="text-sm text-stone-400">No jobs yet — paste a posting above to get started.</p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {jobs.map((job) => (
+                <li key={job.id} className="relative group">
+                  <DeleteJobIcon jobId={job.id} />
+                  <Link
+                    href={`/dashboard/jobs/${job.id}`}
+                    className="flex items-start gap-4 bg-white border border-stone-200/80 rounded-2xl p-4 hover:border-indigo-200 hover:shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-all duration-150"
+                  >
+                    <span
+                      className={`grid place-items-center shrink-0 w-10 h-10 rounded-xl text-sm font-semibold ${avatarStyle(
+                        job.company ?? job.id
+                      )}`}
+                    >
+                      {initial(job.company)}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className="font-semibold text-stone-900 truncate">
+                          {job.company ?? "Unknown company"}
+                        </p>
+                        <span className="text-xs text-stone-400 shrink-0">
+                          {relativeTime(job.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-stone-500 truncate mt-0.5">
                         {job.title ?? "Unknown role"}
                         {job.location ? ` · ${job.location}` : ""}
                       </p>
                       {job.jdSummary && (
-                        <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{job.jdSummary}</p>
+                        <p className="text-xs text-stone-400 mt-1.5 line-clamp-2 leading-relaxed">
+                          {job.jdSummary}
+                        </p>
                       )}
+                      <div className="flex items-center gap-1.5 mt-2.5">
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${METHOD_COLORS[job.applyMethod]}`}>
+                          {job.applyMethod.toLowerCase()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[job.applicationStatus]}`}>
-                        {STATUS_LABELS[job.applicationStatus]}
-                      </span>
-                      <span className="text-xs text-zinc-400">
-                        {job.applyMethod.toLowerCase()}
-                        {job.artifacts.length > 0 ? ` · ${job.artifacts.length} artifacts` : ""}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </main>
   );

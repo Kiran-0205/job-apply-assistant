@@ -30,11 +30,11 @@ export function GenerateButton({ jobId }: { jobId: string }) {
       <button
         onClick={generate}
         disabled={loading}
-        className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="px-4 py-2 bg-stone-900 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
       >
         {loading ? "Generating…" : "Generate / Regenerate"}
       </button>
-      {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1.5 text-sm text-rose-600">{error}</p>}
     </div>
   );
 }

@@ -14,17 +14,37 @@ function htmlToText(html: string): string {
   return $("body").text().replace(/\s+/g, " ").trim();
 }
 
+// A bare link with no surrounding text isn't real JD content — handing it to
+// the LLM as "rawText" makes it guess/hallucinate a listing from the company
+// name in the URL instead of reading the actual posting. Route it through the
+// same fetch-based path as the URL tab so behavior is consistent and honest.
+const BARE_URL_RE = /^https?:\/\/\S+$/i;
+
+async function ingestUrl(url: string): Promise<IngestResult> {
+  const html = await safeFetch(url);
+  const text = htmlToText(html);
+  if (text.length < 50) {
+    // Many career sites (Ashby, and similar React/SPA-based ATS pages) render
+    // their content client-side with JavaScript — the raw HTML we fetch is an
+    // empty shell, so there's nothing for cheerio to extract. We can't run JS
+    // here, so guide the user to the path that always works: paste the text.
+    throw new Error(
+      "This page renders its content with JavaScript, so we can't read the posting from the URL. Open the posting, copy its text, and paste that into \"Paste text\" instead."
+    );
+  }
+  return { source: "URL", text, sourceUrl: url };
+}
+
 export async function ingest(
   input: { message: string } | { url: string }
 ): Promise<IngestResult> {
   if ("message" in input) {
-    return { source: "MESSAGE", text: input.message.trim() };
+    const trimmed = input.message.trim();
+    if (BARE_URL_RE.test(trimmed)) {
+      return ingestUrl(trimmed);
+    }
+    return { source: "MESSAGE", text: trimmed };
   }
 
-  const html = await safeFetch(input.url);
-  const text = htmlToText(html);
-  if (text.length < 50) {
-    throw new Error("Fetched page contains too little text to be a job posting");
-  }
-  return { source: "URL", text, sourceUrl: input.url };
+  return ingestUrl(input.url);
 }

@@ -91,6 +91,11 @@ model Job {
   location  String?
   jdSummary String? @db.Text // short normalized summary shown on the dashboard card
 
+  // Pulled out of the JD so they can be shown as their own glanceable lists
+  // on the job detail page, instead of buried in the raw text.
+  skills         String[] @default([]) // e.g. "TypeScript", "PostgreSQL", "System design"
+  qualifications String[] @default([]) // e.g. "3+ years backend experience", "BS in CS or equivalent"
+
   // --- the routing decision ---
   applyMethod  ApplyMethod @default(UNKNOWN)
   contactEmail String?     // set when applyMethod = EMAIL

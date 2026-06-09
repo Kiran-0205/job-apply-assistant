@@ -14,6 +14,8 @@ const ExtractionSchema = z.object({
   applyMethod: z.enum(["EMAIL", "PORTAL", "UNKNOWN"]),
   contactEmail: z.string().nullable(),
   portalUrl: z.string().nullable(),
+  skills: z.array(z.string()),
+  qualifications: z.array(z.string()),
 });
 
 type Extraction = z.infer<typeof ExtractionSchema>;
@@ -28,7 +30,9 @@ Return ONLY a valid JSON object with these exact keys (use null for missing fiel
   "jdSummary": string | null,            // 2-3 sentence summary of the role
   "applyMethod": "EMAIL" | "PORTAL" | "UNKNOWN",
   "contactEmail": string | null,          // set when applyMethod is EMAIL
-  "portalUrl": string | null             // set when applyMethod is PORTAL
+  "portalUrl": string | null,            // set when applyMethod is PORTAL
+  "skills": string[],                     // concrete technical/professional skills the role calls for, e.g. "TypeScript", "system design", "SQL" — short phrases, no duplicates, [] if none mentioned
+  "qualifications": string[]              // required/preferred qualifications, e.g. "3+ years backend experience", "BS in CS or equivalent" — short phrases, [] if none mentioned
 }
 
 Rules for applyMethod:
@@ -88,6 +92,8 @@ export async function extractAndStore(
       applyMethod: extraction.applyMethod as ApplyMethod,
       contactEmail: extraction.contactEmail,
       portalUrl: extraction.portalUrl,
+      skills: extraction.skills,
+      qualifications: extraction.qualifications,
     },
   });
 

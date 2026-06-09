@@ -17,6 +17,17 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
   return NextResponse.json(job);
 }
 
+export async function DELETE(_req: NextRequest, ctx: RouteContext) {
+  const { jobId } = await ctx.params;
+
+  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { id: true } });
+  if (!job) return NextResponse.json({ error: "Job not found" }, { status: 404 });
+
+  await prisma.job.delete({ where: { id: jobId } });
+
+  return NextResponse.json({ ok: true });
+}
+
 const PatchSchema = z
   .object({
     applicationStatus: z.nativeEnum(ApplicationStatus).optional(),
