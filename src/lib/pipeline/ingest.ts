@@ -5,6 +5,12 @@ export type IngestResult =
   | { source: "MESSAGE"; text: string }
   | { source: "URL"; text: string; sourceUrl: string };
 
+// Minimum characters of extracted text before we consider a page actually readable
+const MIN_CONTENT_LENGTH = 300;
+// If direct-fetched text exceeds this, the page is probably a JS SPA with large
+// config/JSON blobs leaked into the body — fall through to Jina.ai instead.
+const MAX_DIRECT_CONTENT = 50_000;
+
 // Strip HTML to plain text using cheerio; preserves whitespace structure
 function htmlToText(html: string): string {
   const $ = cheerio.load(html);
@@ -14,6 +20,25 @@ function htmlToText(html: string): string {
   return $("body").text().replace(/\s+/g, " ").trim();
 }
 
+// Some SPA pages (e.g. Microsoft Careers) embed large JSON blobs as inline code
+// spans in Jina's markdown output. Stripping them keeps the job content in the
+// LLM's 15k-char window.
+function cleanJinaMarkdown(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, "")   // fenced code blocks
+    .replace(/`[^`\n]{20,}`/g, "")    // long inline code spans (skip short ones like URLs)
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Jina.ai Reader renders JavaScript-heavy pages and returns clean markdown text.
+// Used as a fallback when direct HTML fetch produces sparse content.
+async function fetchViaJina(url: string): Promise<string> {
+  const jinaUrl = `https://r.jina.ai/${url}`;
+  const raw = await safeFetch(jinaUrl, { timeoutMs: 30_000 });
+  return cleanJinaMarkdown(raw);
+}
+
 // A bare link with no surrounding text isn't real JD content — handing it to
 // the LLM as "rawText" makes it guess/hallucinate a listing from the company
 // name in the URL instead of reading the actual posting. Route it through the
@@ -21,17 +46,39 @@ function htmlToText(html: string): string {
 const BARE_URL_RE = /^https?:\/\/\S+$/i;
 
 async function ingestUrl(url: string): Promise<IngestResult> {
-  const html = await safeFetch(url);
-  const text = htmlToText(html);
-  if (text.length < 50) {
-    // Many career sites (Ashby, and similar React/SPA-based ATS pages) render
-    // their content client-side with JavaScript — the raw HTML we fetch is an
-    // empty shell, so there's nothing for cheerio to extract. We can't run JS
-    // here, so guide the user to the path that always works: paste the text.
+  let text: string | null = null;
+
+  // First: try a direct server-side fetch (fast, works for server-rendered pages)
+  try {
+    const html = await safeFetch(url);
+    const extracted = htmlToText(html);
+    if (extracted.length >= MIN_CONTENT_LENGTH && extracted.length <= MAX_DIRECT_CONTENT) {
+      text = extracted;
+    }
+    // If extracted is too large the page likely leaked JS config/JSON into body text;
+    // fall through to Jina which strips that noise.
+  } catch {
+    // Direct fetch failed (bot-protection 403, network error, etc.) — fall through to Jina
+  }
+
+  // Fallback: Jina.ai Reader renders JS-heavy SPA pages and returns clean text
+  if (text === null) {
+    try {
+      const jinaText = await fetchViaJina(url);
+      if (jinaText.length >= MIN_CONTENT_LENGTH) {
+        text = jinaText;
+      }
+    } catch {
+      // Jina also failed — fall through to error
+    }
+  }
+
+  if (text === null) {
     throw new Error(
-      "This page renders its content with JavaScript, so we can't read the posting from the URL. Open the posting, copy its text, and paste that into \"Paste text\" instead."
+      "Could not extract content from this page. It may render with JavaScript or block automated access. Open the posting, copy its text, and paste that into \"Paste text\" instead."
     );
   }
+
   return { source: "URL", text, sourceUrl: url };
 }
 

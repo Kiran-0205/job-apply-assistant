@@ -61,7 +61,11 @@ export async function safeFetch(
   }
 
   const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
+  if (
+    !contentType.includes("text/html") &&
+    !contentType.includes("text/plain") &&
+    !contentType.includes("text/markdown")
+  ) {
     throw new Error("URL did not return an HTML or text page");
   }
 
