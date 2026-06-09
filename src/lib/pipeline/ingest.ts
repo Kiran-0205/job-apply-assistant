@@ -5,84 +5,101 @@ export type IngestResult =
   | { source: "MESSAGE"; text: string }
   | { source: "URL"; text: string; sourceUrl: string };
 
-// Minimum chars for the direct HTML fetch — a real job description is rarely shorter.
-// SPA shells often return 100–500 chars of meta/title text; those fall through to Jina.
-const MIN_DIRECT_CONTENT = 1_500;
-// If direct-fetched text exceeds this, the page is probably a JS SPA with large
-// config/JSON blobs leaked into the body — fall through to Jina.ai instead.
-const MAX_DIRECT_CONTENT = 50_000;
-// Minimum chars for a Jina.ai result to be considered usable.
-const MIN_JINA_CONTENT = 300;
+// Direct-fetch thresholds: too-short = SPA shell, too-long = leaked JS config blobs
+const MIN_DIRECT = 1_500;
+const MAX_DIRECT = 50_000;
+// Jina threshold: anything under this after cleaning is not a real job description
+const MIN_JINA = 300;
 
-// Strip HTML to plain text using cheerio; preserves whitespace structure
 function htmlToText(html: string): string {
   const $ = cheerio.load(html);
-  // Remove non-content elements
   $("script, style, noscript, iframe, nav, footer, header").remove();
-  // Collapse whitespace
   return $("body").text().replace(/\s+/g, " ").trim();
 }
 
-// Some SPA pages (e.g. Microsoft Careers) embed large JSON blobs as inline code
-// spans in Jina's markdown output. Stripping them keeps the job content in the
-// LLM's 15k-char window.
-function cleanJinaMarkdown(text: string): string {
+// Strip backtick-fenced code blocks and long inline code spans.
+// SPA pages (Phenom ATS etc.) embed theme JSON as code spans that eat
+// the LLM's 15k-char window before the actual job description.
+function cleanMarkdown(text: string): string {
   return text
-    .replace(/```[\s\S]*?```/g, "")   // fenced code blocks
-    .replace(/`[^`\n]{20,}`/g, "")    // long inline code spans (skip short ones like URLs)
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`\n]{20,}`/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-// Jina.ai Reader renders JavaScript-heavy pages and returns clean markdown text.
-// Used as a fallback when direct HTML fetch produces sparse content.
-async function fetchViaJina(url: string): Promise<string> {
-  const jinaUrl = `https://r.jina.ai/${url}`;
-  const raw = await safeFetch(jinaUrl, { timeoutMs: 30_000 });
-  return cleanJinaMarkdown(raw);
+const ERROR_TITLE_RE = /not found|404|error|exception|no job|page unavailable|job closed|expired/i;
+
+// Parse Jina.ai reader response:
+// - Returns null if Jina signals a 4xx/5xx via its Warning: header
+// - Returns null if the page title or first heading indicates a "not found" / error page
+// - Strips the Jina metadata preamble (Title:, URL Source:, Markdown Content:)
+//   so it doesn't consume the LLM's context window
+function parseJinaResponse(raw: string): string | null {
+  // Explicit error signal from Jina
+  if (/^Warning:\s+Target URL returned error/m.test(raw)) {
+    return null;
+  }
+  // Catch error pages via the page title Jina reports
+  const titleMatch = raw.match(/^Title:\s+(.+)/m);
+  if (titleMatch && ERROR_TITLE_RE.test(titleMatch[1])) {
+    return null;
+  }
+  // Extract only the content after "Markdown Content:"
+  const match = raw.match(/Markdown Content:\s*\n([\s\S]*)/);
+  const content = cleanMarkdown(match ? match[1] : raw);
+  // Also reject if the first non-empty line of content is an error heading
+  const firstHeading = content.match(/^#+\s+(.+)/m);
+  if (firstHeading && ERROR_TITLE_RE.test(firstHeading[1])) {
+    return null;
+  }
+  return content.length >= MIN_JINA ? content : null;
 }
 
-// A bare link with no surrounding text isn't real JD content — handing it to
-// the LLM as "rawText" makes it guess/hallucinate a listing from the company
-// name in the URL instead of reading the actual posting. Route it through the
-// same fetch-based path as the URL tab so behavior is consistent and honest.
+async function fetchDirect(url: string): Promise<string | null> {
+  try {
+    const html = await safeFetch(url, { timeoutMs: 10_000 });
+    const text = htmlToText(html);
+    if (text.length >= MIN_DIRECT && text.length <= MAX_DIRECT) return text;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchViaJina(url: string): Promise<string | null> {
+  try {
+    const raw = await safeFetch(`https://r.jina.ai/${url}`, { timeoutMs: 30_000 });
+    return parseJinaResponse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// A bare URL pasted into the text tab should go through the same fetch path
+// as the URL tab — otherwise the LLM hallucinates from the company name alone.
 const BARE_URL_RE = /^https?:\/\/\S+$/i;
 
 async function ingestUrl(url: string): Promise<IngestResult> {
-  let text: string | null = null;
+  // Run both in parallel: direct is faster for static pages, Jina handles SPAs.
+  // Checking direct first means static pages resolve in ~2s; SPAs fall through
+  // to Jina which has been running in parallel and is already partway done.
+  const directPromise = fetchDirect(url);
+  const jinaPromise = fetchViaJina(url);
 
-  // First: try a direct server-side fetch (fast, works for server-rendered pages)
-  try {
-    const html = await safeFetch(url);
-    const extracted = htmlToText(html);
-    if (extracted.length >= MIN_DIRECT_CONTENT && extracted.length <= MAX_DIRECT_CONTENT) {
-      text = extracted;
-    }
-    // If extracted is too large the page likely leaked JS config/JSON into body text;
-    // fall through to Jina which strips that noise.
-  } catch {
-    // Direct fetch failed (bot-protection 403, network error, etc.) — fall through to Jina
+  const directText = await directPromise;
+  if (directText !== null) {
+    return { source: "URL", text: directText, sourceUrl: url };
   }
 
-  // Fallback: Jina.ai Reader renders JS-heavy SPA pages and returns clean text
-  if (text === null) {
-    try {
-      const jinaText = await fetchViaJina(url);
-      if (jinaText.length >= MIN_JINA_CONTENT) {
-        text = jinaText;
-      }
-    } catch {
-      // Jina also failed — fall through to error
-    }
+  const jinaText = await jinaPromise;
+  if (jinaText !== null) {
+    return { source: "URL", text: jinaText, sourceUrl: url };
   }
 
-  if (text === null) {
-    throw new Error(
-      "Could not extract content from this page. It may render with JavaScript or block automated access. Open the posting, copy its text, and paste that into \"Paste text\" instead."
-    );
-  }
-
-  return { source: "URL", text, sourceUrl: url };
+  throw new Error(
+    "Could not extract content from this page. It may require a login or block automated access. Open the posting, copy its text, and paste that into \"Paste text\" instead."
+  );
 }
 
 export async function ingest(
@@ -95,6 +112,5 @@ export async function ingest(
     }
     return { source: "MESSAGE", text: trimmed };
   }
-
   return ingestUrl(input.url);
 }
