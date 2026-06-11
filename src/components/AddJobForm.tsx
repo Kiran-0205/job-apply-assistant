@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 
 type Tab = "text" | "url";
 
+// A pasted value that is just a bare link — used to nudge the user toward the URL tab.
+const BARE_URL_RE = /^https?:\/\/\S+$/i;
+
 export function AddJobForm() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("url");
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const pastedUrlInText = tab === "text" && BARE_URL_RE.test(value.trim());
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,14 +67,29 @@ export function AddJobForm() {
       </div>
 
       {tab === "text" ? (
-        <textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Paste the job description here…"
-          rows={6}
-          required
-          className="w-full border border-stone-200 rounded-xl p-3.5 text-sm text-stone-800 placeholder:text-stone-400 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow"
-        />
+        <>
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Paste the job description here…"
+            rows={6}
+            required
+            className="w-full border border-stone-200 rounded-xl p-3.5 text-sm text-stone-800 placeholder:text-stone-400 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow"
+          />
+          {pastedUrlInText && (
+            <p className="mt-2 text-xs text-stone-500">
+              That looks like a link.{" "}
+              <button
+                type="button"
+                onClick={() => { setTab("url"); setError(null); }}
+                className="font-medium text-indigo-600 hover:underline cursor-pointer"
+              >
+                Switch to the URL tab
+              </button>{" "}
+              for better extraction.
+            </p>
+          )}
+        </>
       ) : (
         <input
           type="url"
@@ -87,7 +107,7 @@ export function AddJobForm() {
 
       <button
         type="submit"
-        disabled={loading || !value.trim()}
+        disabled={loading || !value.trim() || pastedUrlInText}
         className="mt-3.5 w-full bg-stone-900 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
       >
         {loading ? "Extracting…" : "Add job"}

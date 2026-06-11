@@ -74,6 +74,26 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
+  // --- candidate profile ---
+  // Filled in by the user through the Profile page. These fields are what the
+  // generation step uses to write tailored emails / referral notes, so the app
+  // is generic: whoever fills this in is who the materials are written for.
+  headline    String? // e.g. "Final-year CS student transitioning to SDE roles"
+  location    String? // e.g. "Bengaluru, India"
+  summary     String? @db.Text // free-text background: education, experience, achievements
+  skills      String? // free-text skills / tech stack, e.g. "TypeScript, React, PostgreSQL"
+  githubUrl   String?
+  linkedinUrl String?
+  websiteUrl  String? // portfolio / personal site
+
+  // --- generation templates ---
+  // Optional starting points the user can write themselves; when set, the
+  // generation step adapts these for the specific job instead of writing
+  // from scratch, so the candidate's own voice/format carries through.
+  emailTemplate      String? @db.Text
+  referralTemplate   String? @db.Text
+  connectionTemplate String? @db.Text
+
   jobs Job[] // one user owns many tracked jobs
 }
 

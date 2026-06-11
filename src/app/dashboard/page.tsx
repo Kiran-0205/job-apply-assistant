@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getAppUser } from "@/lib/user";
 import { AddJobForm } from "@/components/AddJobForm";
 import { DeleteJobIcon } from "@/components/DeleteJobIcon";
 
@@ -17,8 +18,6 @@ const JOB_SITES = [
   { name: "Instahyre",   url: "https://www.instahyre.com",             label: "Tech hiring platform",    color: "bg-violet-50 text-violet-700" },
   { name: "Shine",       url: "https://www.shine.com",                 label: "India professionals",     color: "bg-sky-50 text-sky-700" },
 ];
-
-const DEMO_USER_EMAIL = "saikiran@example.com";
 
 const METHOD_COLORS: Record<string, string> = {
   EMAIL: "bg-emerald-50 text-emerald-700",
@@ -66,14 +65,12 @@ function relativeTime(date: Date): string {
 }
 
 export default async function DashboardPage() {
-  const user = await prisma.user.findUnique({ where: { email: DEMO_USER_EMAIL } });
-  const jobs = user
-    ? await prisma.job.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        include: { artifacts: { select: { id: true }, orderBy: { createdAt: "desc" } } },
-      })
-    : [];
+  const user = await getAppUser();
+  const jobs = await prisma.job.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    include: { artifacts: { select: { id: true }, orderBy: { createdAt: "desc" } } },
+  });
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-10">

@@ -1,7 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-import { ArtifactType } from "@prisma/client";
+import { ArtifactType, User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { PROFILE } from "@/lib/profile";
 
 const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -17,6 +16,23 @@ interface JobContext {
   rawText: string;
 }
 
+// Render the candidate's saved profile into a bullet block for the prompt.
+// Only includes fields the user actually filled in, so empty profiles don't
+// inject "null" noise. Returns "" if nothing meaningful is set.
+function candidateBlock(user: User): string {
+  const lines: string[] = [];
+  if (user.name) lines.push(`Name: ${user.name}`);
+  if (user.email) lines.push(`Email: ${user.email}`);
+  if (user.headline) lines.push(`Headline: ${user.headline}`);
+  if (user.location) lines.push(`Location: ${user.location}`);
+  if (user.summary) lines.push(`Background: ${user.summary}`);
+  if (user.skills) lines.push(`Skills: ${user.skills}`);
+  if (user.githubUrl) lines.push(`GitHub: ${user.githubUrl}`);
+  if (user.linkedinUrl) lines.push(`LinkedIn: ${user.linkedinUrl}`);
+  if (user.websiteUrl) lines.push(`Website: ${user.websiteUrl}`);
+  return lines.join("\n");
+}
+
 async function llm(system: string, user: string): Promise<string> {
   const response = await client.models.generateContent({
     model: "gemini-3.1-flash-lite",
@@ -30,6 +46,14 @@ async function llm(system: string, user: string): Promise<string> {
   return (response.text ?? "").trim();
 }
 
+// When the user has saved a template for this artifact type, ask the model
+// to adapt it for this job rather than writing from scratch — preserves the
+// candidate's own voice/format.
+function templateInstruction(template: string | null): string {
+  if (!template?.trim()) return "";
+  return `\n\nThe candidate has provided this template as a starting point. Adapt it for this specific job — keep its structure, tone, and format, but tailor the details:\n"""\n${template.trim()}\n"""`;
+}
+
 function jobContextBlock(job: JobContext): string {
   return `Company: ${job.company ?? "Unknown"}
 Role: ${job.title ?? "Unknown"}
@@ -40,17 +64,11 @@ Portal URL: ${job.portalUrl ?? "N/A"}
 JD summary: ${job.jdSummary ?? "N/A"}`;
 }
 
-async function generateEmailDraft(job: JobContext): Promise<string> {
-  const system = `You are a job application assistant helping ${PROFILE.name} apply for software engineering roles.
+async function generateEmailDraft(job: JobContext, candidate: string, template: string | null): Promise<string> {
+  const system = `You are a job application assistant helping a candidate apply for a role.
 
 About the candidate:
-- ${PROFILE.degree}
-- ${PROFILE.transition}
-- Tech stack: ${PROFILE.stack}
-- ${PROFILE.competitive}
-- ${PROFILE.experience}
-- GitHub: ${PROFILE.github}
-- LinkedIn: ${PROFILE.linkedin}
+${candidate}
 
 Write a concise, professional cold-application email. Guidelines:
 - Subject line first, formatted as: Subject: <subject>
@@ -58,7 +76,7 @@ Write a concise, professional cold-application email. Guidelines:
 - 3-4 short paragraphs: hook, why this role, relevant skills/projects, call to action
 - Tone: confident and direct, not sycophantic
 - End with the candidate's name and contact info
-- Do not invent projects or experience not mentioned above`;
+- Do not invent projects or experience not mentioned above${templateInstruction(template)}`;
 
   const user = `Write an application email for this job:
 
@@ -70,22 +88,18 @@ ${job.rawText.slice(0, 8_000)}`;
   return llm(system, user);
 }
 
-async function generateReferralRequest(job: JobContext): Promise<string> {
-  const system = `You are helping ${PROFILE.name} write a referral request message for a job.
+async function generateReferralRequest(job: JobContext, candidate: string, template: string | null): Promise<string> {
+  const system = `You are helping a candidate write a referral request message for a job.
 
 About the candidate:
-- ${PROFILE.degree}
-- ${PROFILE.transition}
-- Tech stack: ${PROFILE.stack}
-- ${PROFILE.competitive}
-- ${PROFILE.experience}
+${candidate}
 
 Write a short, friendly referral request (~150 words). Should:
 - Mention the specific role and company
 - Briefly say why the candidate is a fit
 - Ask directly but politely if the contact would be comfortable referring them
 - Offer to share resume
-- Not be sycophantic or excessively long`;
+- Not be sycophantic or excessively long${templateInstruction(template)}`;
 
   const user = `Write a referral request message for this job:
 
@@ -94,14 +108,13 @@ ${jobContextBlock(job)}`;
   return llm(system, user);
 }
 
-async function generateConnectionNote(job: JobContext): Promise<string> {
-  const system = `You are helping ${PROFILE.name} write a LinkedIn connection request note.
+async function generateConnectionNote(job: JobContext, candidate: string, template: string | null): Promise<string> {
+  const system = `You are helping a candidate write a LinkedIn connection request note.
 
 HARD CONSTRAINT: The note MUST be under 300 characters (LinkedIn's limit). Be direct and personalized.
 
 About the candidate:
-- ${PROFILE.degree}, transitioning to SDE
-- Stack: ${PROFILE.stack}`;
+${candidate}${templateInstruction(template)}`;
 
   const user = `Write a LinkedIn connection note to someone who works at ${job.company ?? "this company"} for the role of ${job.title ?? "software engineer"}.
 
@@ -110,12 +123,23 @@ Keep it under 300 characters. Mention the role. Be specific, not generic.`;
   return llm(system, user);
 }
 
-export type GenerateResult = {
-  artifacts: Array<{ type: ArtifactType; content: string; id: string }>;
-};
+export type GenerateResult = { id: string; type: ArtifactType; content: string };
 
-export async function generateArtifacts(jobId: string): Promise<GenerateResult> {
-  const job = await prisma.job.findUniqueOrThrow({ where: { id: jobId } });
+// Each artifact type is generated independently and on demand — the user
+// picks which materials they need for a given job, rather than us deciding
+// based on applyMethod.
+export async function generateArtifact(jobId: string, type: ArtifactType): Promise<GenerateResult> {
+  const job = await prisma.job.findUniqueOrThrow({
+    where: { id: jobId },
+    include: { user: true },
+  });
+
+  const candidate = candidateBlock(job.user);
+  if (!candidate.trim()) {
+    throw new Error(
+      "Your profile is empty. Add your details on the Profile page so materials can be written for you."
+    );
+  }
 
   const ctx: JobContext = {
     id: job.id,
@@ -129,29 +153,21 @@ export async function generateArtifacts(jobId: string): Promise<GenerateResult> 
     rawText: job.rawText,
   };
 
-  const artifactsToCreate: Array<{ type: ArtifactType; content: string }> = [];
-
-  if (job.applyMethod === "EMAIL") {
-    const content = await generateEmailDraft(ctx);
-    artifactsToCreate.push({ type: "EMAIL_DRAFT", content });
-  } else {
-    // PORTAL or UNKNOWN — generate referral + connection note
-    const [referral, note] = await Promise.all([
-      generateReferralRequest(ctx),
-      generateConnectionNote(ctx),
-    ]);
-    artifactsToCreate.push(
-      { type: "REFERRAL_REQUEST", content: referral },
-      { type: "CONNECTION_NOTE", content: note }
-    );
+  let content: string;
+  switch (type) {
+    case "EMAIL_DRAFT":
+      content = await generateEmailDraft(ctx, candidate, job.user.emailTemplate);
+      break;
+    case "REFERRAL_REQUEST":
+      content = await generateReferralRequest(ctx, candidate, job.user.referralTemplate);
+      break;
+    case "CONNECTION_NOTE":
+      content = await generateConnectionNote(ctx, candidate, job.user.connectionTemplate);
+      break;
   }
 
-  // Append-only: create new rows, never overwrite existing artifacts
-  const created = await prisma.$transaction(
-    artifactsToCreate.map((a) =>
-      prisma.generatedArtifact.create({ data: { ...a, jobId: job.id } })
-    )
-  );
+  // Append-only: create a new row, never overwrite existing artifacts
+  const created = await prisma.generatedArtifact.create({ data: { type, content, jobId: job.id } });
 
   // Bump applicationStatus to DRAFTED if still at SAVED
   if (job.applicationStatus === "SAVED") {
@@ -161,5 +177,5 @@ export async function generateArtifacts(jobId: string): Promise<GenerateResult> 
     });
   }
 
-  return { artifacts: created.map((a) => ({ type: a.type, content: a.content, id: a.id })) };
+  return { id: created.id, type: created.type, content: created.content };
 }

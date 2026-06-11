@@ -4,17 +4,10 @@ import { ApplicationStatus } from "@prisma/client";
 import { ingest } from "@/lib/pipeline/ingest";
 import { extractAndStore } from "@/lib/pipeline/extract";
 import { prisma } from "@/lib/prisma";
-
-const DEMO_USER_EMAIL = "saikiran@example.com";
+import { getAppUser } from "@/lib/user";
 
 export async function GET(req: NextRequest) {
-  const user = await prisma.user.findUnique({ where: { email: DEMO_USER_EMAIL } });
-  if (!user) {
-    return NextResponse.json(
-      { error: "Demo user not found — run `npm run db:seed` first" },
-      { status: 500 }
-    );
-  }
+  const user = await getAppUser();
 
   const statusParam = req.nextUrl.searchParams.get("status");
   const validStatuses = Object.values(ApplicationStatus);
@@ -55,13 +48,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { email: DEMO_USER_EMAIL } });
-  if (!user) {
-    return NextResponse.json(
-      { error: "Demo user not found — run `npm run db:seed` first" },
-      { status: 500 }
-    );
-  }
+  const user = await getAppUser();
 
   let ingested: Awaited<ReturnType<typeof ingest>>;
   try {

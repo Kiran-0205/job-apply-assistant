@@ -3,15 +3,13 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const user = await prisma.user.upsert({
-    where: { email: "saikiran@example.com" },
-    update: {},
-    create: {
-      email: "saikiran@example.com",
-      name: "Poreddy Sai Kiran Reddy",
-    },
-  });
-  console.log("Seeded user:", user.id, user.email);
+  // Seed a single blank app user. Real details are entered through the
+  // Profile page in the UI — nothing personal is hardcoded here.
+  const existing = await prisma.user.findFirst();
+  const user =
+    existing ??
+    (await prisma.user.create({ data: { email: "you@example.com" } }));
+  console.log("App user ready:", user.id, user.email);
 }
 
 main()

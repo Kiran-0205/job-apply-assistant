@@ -79,6 +79,20 @@ export async function extractAndStore(
 ) {
   const extraction = await callLLM(text);
 
+  // When the posting came from a URL, that URL is itself an apply portal.
+  // Use it to fill the gaps the LLM leaves: a PORTAL method with no link, or
+  // an UNKNOWN method when no contact email was found. This keeps "Apply via"
+  // pointing at the link the user pasted instead of showing nothing.
+  let applyMethod = extraction.applyMethod;
+  let portalUrl = extraction.portalUrl;
+  if (source === "URL" && sourceUrl && applyMethod !== "EMAIL") {
+    // Always point "Apply via" at the exact link the user pasted, rather than
+    // whatever link the LLM happened to pull out of the page body. The only
+    // exception is a clear apply-by-email posting, which keeps its address.
+    applyMethod = "PORTAL";
+    portalUrl = sourceUrl;
+  }
+
   const job = await prisma.job.create({
     data: {
       userId,
@@ -89,9 +103,9 @@ export async function extractAndStore(
       title: extraction.title,
       location: extraction.location,
       jdSummary: extraction.jdSummary,
-      applyMethod: extraction.applyMethod as ApplyMethod,
+      applyMethod: applyMethod as ApplyMethod,
       contactEmail: extraction.contactEmail,
-      portalUrl: extraction.portalUrl,
+      portalUrl: portalUrl,
       skills: extraction.skills,
       qualifications: extraction.qualifications,
     },
