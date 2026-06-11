@@ -37,7 +37,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${typewriter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header className="sticky top-0 z-20 bg-coal border-b-2 border-rust">
+        <header className="sticky top-0 z-20 bg-coal border-b-[3px] border-rust shadow-[0_5px_16px_rgba(22,18,14,0.45)]">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-3 group">
               <span className="grid place-items-center w-7 h-7 border-2 border-cream/80 font-mono text-sm font-bold text-cream group-hover:bg-rust group-hover:border-rust transition-colors">

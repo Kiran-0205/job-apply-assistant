@@ -45,27 +45,22 @@ export function AddJobForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-cream border border-linen p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <div>
-          <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
-            Open a Case
-          </h2>
-          <div className="w-10 h-0.5 bg-rust mt-2 mb-2" aria-hidden />
-          <p className="text-xs text-ink-soft">
-            Paste the raw text or drop a career-page link — we&apos;ll extract the rest.
-          </p>
-        </div>
-        <div className="flex border border-linen shrink-0">
+    <form onSubmit={handleSubmit} className="bg-cream border-2 border-coal shadow-card-lg">
+      {/* Title band — like the tab of a file folder. */}
+      <div className="flex items-center justify-between gap-3 bg-coal px-5 sm:px-6 py-2.5">
+        <h2 className="font-mono text-xs font-bold text-cream uppercase tracking-[0.3em]">
+          Open a Case
+        </h2>
+        <div className="flex border border-cream/30 shrink-0">
           {(["text", "url"] as Tab[]).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => { setTab(t); setValue(""); setError(null); }}
-              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-colors cursor-pointer ${
+              className={`px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-colors cursor-pointer ${
                 tab === t
-                  ? "bg-coal text-cream"
-                  : "bg-transparent text-ink-soft hover:text-ink"
+                  ? "bg-rust text-cream"
+                  : "bg-transparent text-cream/50 hover:text-cream"
               }`}
             >
               {t === "text" ? "Paste text" : "URL"}
@@ -73,6 +68,11 @@ export function AddJobForm() {
           ))}
         </div>
       </div>
+
+      <div className="p-5 sm:p-6">
+      <p className="text-xs text-ink-soft mb-3">
+        Paste the raw text or drop a career-page link — we&apos;ll extract the rest.
+      </p>
 
       {tab === "text" ? (
         <>
@@ -120,6 +120,7 @@ export function AddJobForm() {
       >
         {loading ? "Extracting…" : "File the case"}
       </button>
+      </div>
     </form>
   );
 }

@@ -5,7 +5,7 @@
  * near-black panels. Flat print look: thin borders, square corners.
  */
 :root {
-  --background: #ece4d3;
+  --background: #e5dbc6;
   --foreground: #211b14;
 }
 
@@ -18,8 +18,14 @@
   --color-ink-soft: #7d7060;
   --color-rust: #8c3120;
   --color-rust-dark: #6d2517;
+  --color-flame: #c25540;
   --color-coal: #16120e;
   --color-linen: #d6cab2;
+  /* Hard offset "print" shadows — the depth system. */
+  --shadow-card: 4px 4px 0 rgb(22 18 14 / 0.1);
+  --shadow-card-lg: 7px 7px 0 rgb(22 18 14 / 0.14);
+  --shadow-card-rust: 6px 6px 0 rgb(140 49 32 / 0.28);
+  --shadow-panel: 7px 7px 0 rgb(140 49 32 / 0.55);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-typewriter);
 }
@@ -77,11 +83,11 @@ body {
   0% {
     opacity: 0;
     transform: translateY(14px);
-    text-shadow: 0 0 0 rgba(140, 49, 32, 0);
+    text-shadow: 0 0 0 rgba(194, 85, 64, 0);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    text-shadow: 0 0 18px rgba(140, 49, 32, 0.35);
+    text-shadow: 0 0 18px rgba(194, 85, 64, 0.55);
   }
 }

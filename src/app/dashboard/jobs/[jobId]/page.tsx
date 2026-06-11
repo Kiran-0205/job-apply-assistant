@@ -63,13 +63,19 @@ export default async function JobDetailPage({
           <DeleteJobButton jobId={job.id} />
         </div>
 
-        {/* Job header */}
-        <div className="bg-cream border border-linen p-6 sm:p-7">
+        {/* Job header — the case file itself, heaviest object on the page */}
+        <div className="bg-cream border-2 border-coal shadow-card-lg">
+          <div className="bg-coal px-6 sm:px-7 py-2.5 flex items-center justify-between">
+            <p className="font-mono text-[11px] font-bold text-cream uppercase tracking-[0.3em]">
+              Case file
+            </p>
+            <span className="font-mono text-[10px] text-flame uppercase tracking-[0.2em]">
+              Confidential
+            </span>
+          </div>
+          <div className="p-6 sm:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-mono text-[11px] font-bold text-rust uppercase tracking-[0.25em] mb-2">
-                Case file
-              </p>
               <h1 className="font-mono text-2xl font-bold text-ink">
                 {job.company ?? "Unknown Company"}
               </h1>
@@ -104,11 +110,12 @@ export default async function JobDetailPage({
               </p>
             </div>
           )}
+          </div>
         </div>
 
         {/* Skills & qualifications */}
         {(job.skills.length > 0 || job.qualifications.length > 0) && (
-          <div className="bg-cream border border-linen p-6 sm:p-7 grid sm:grid-cols-2 gap-6">
+          <div className="bg-cream border border-ink/25 shadow-card p-6 sm:p-7 grid sm:grid-cols-2 gap-6">
             {job.skills.length > 0 && (
               <div>
                 <SectionLabel>Key skills</SectionLabel>
@@ -142,7 +149,7 @@ export default async function JobDetailPage({
 
         {/* Contact email, when one was found in the posting */}
         {job.contactEmail && (
-          <div className="bg-cream border border-linen p-6 sm:p-7 flex items-center justify-between gap-4">
+          <div className="bg-cream border border-ink/25 shadow-card p-6 sm:p-7 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <SectionLabel>Contact email</SectionLabel>
               <p className="font-mono text-sm font-bold text-ink truncate">{job.contactEmail}</p>

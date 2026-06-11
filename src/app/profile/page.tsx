@@ -28,16 +28,22 @@ export default async function ProfilePage() {
           <span aria-hidden>←</span> Back to cases
         </Link>
 
-        <div className="bg-cream border border-linen p-6 sm:p-7">
-          <h1 className="font-mono text-lg font-bold text-ink uppercase tracking-[0.15em]">
-            Your profile
-          </h1>
-          <div className="w-10 h-0.5 bg-rust mt-2" aria-hidden />
-          <p className="text-sm text-ink-soft mt-3 mb-6">
-            Every email, referral request, and connection note is written from these details.
-            Fill them in once — they apply to every job you add.
-          </p>
-          <ProfileForm initial={initial} />
+        <div className="bg-cream border-2 border-coal shadow-card-lg">
+          <div className="bg-coal px-6 sm:px-7 py-2.5 flex items-center justify-between">
+            <h1 className="font-mono text-sm font-bold text-cream uppercase tracking-[0.25em]">
+              Your profile
+            </h1>
+            <span className="font-mono text-[10px] text-flame uppercase tracking-[0.2em]">
+              Client record
+            </span>
+          </div>
+          <div className="p-6 sm:p-7">
+            <p className="text-sm text-ink-soft mb-6">
+              Every email, referral request, and connection note is written from these details.
+              Fill them in once — they apply to every job you add.
+            </p>
+            <ProfileForm initial={initial} />
+          </div>
         </div>
       </div>
     </main>

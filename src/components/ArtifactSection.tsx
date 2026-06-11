@@ -140,7 +140,7 @@ export function ArtifactSection({
     ) : null;
 
   return (
-    <div className="bg-cream border border-linen p-6 sm:p-7">
+    <div className="bg-cream border border-ink/25 shadow-card p-6 sm:p-7">
       <div className="flex items-start justify-between mb-1.5 gap-3">
         <div>
           <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
@@ -170,7 +170,7 @@ export function ArtifactSection({
           </p>
         </div>
       ) : (
-        <div className="border border-linen p-4 sm:p-5 bg-paper">
+        <div className="border border-linen p-4 sm:p-5 bg-paper shadow-[inset_2px_2px_6px_rgba(22,18,14,0.07)]">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             {artifacts.length > 1 ? (
               <select

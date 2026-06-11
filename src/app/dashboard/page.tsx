@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                     <DeleteJobIcon jobId={job.id} />
                     <Link
                       href={`/dashboard/jobs/${job.id}`}
-                      className="block bg-cream border border-linen p-4 sm:p-5 hover:border-rust transition-colors duration-150"
+                      className="block bg-cream border border-ink/25 p-4 sm:p-5 shadow-card hover:border-rust hover:shadow-card-rust hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-150"
                     >
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="font-mono text-[11px] font-bold text-rust uppercase tracking-[0.2em]">
@@ -127,13 +127,18 @@ export default async function DashboardPage() {
           </section>
         </div>
 
-        {/* ── Right column: job boards ── */}
+        {/* ── Right column: job boards — dark directory panel ── */}
         <aside className="mt-10 lg:mt-0 lg:sticky lg:top-20">
-          <div className="bg-cream border border-linen p-4 sm:p-5">
-            <SectionLabel>Job Boards</SectionLabel>
+          <div className="bg-coal p-4 sm:p-5 shadow-panel">
+            <div className="mb-4">
+              <h2 className="font-mono text-xs font-bold text-cream uppercase tracking-[0.3em]">
+                Job Boards
+              </h2>
+              <div className="w-10 h-0.5 bg-flame mt-2" aria-hidden />
+            </div>
             <ul>
               {JOB_SITES.map((site) => (
-                <li key={site.name} className="border-b border-linen/60 last:border-b-0">
+                <li key={site.name} className="border-b border-cream/10 last:border-b-0">
                   <a
                     href={site.url}
                     target="_blank"
@@ -141,14 +146,14 @@ export default async function DashboardPage() {
                     className="flex items-center gap-3 py-2.5 group"
                   >
                     <div className="min-w-0">
-                      <p className="font-mono text-xs font-bold text-ink uppercase tracking-[0.12em] group-hover:text-rust transition-colors leading-tight">
+                      <p className="font-mono text-xs font-bold text-cream/90 uppercase tracking-[0.12em] group-hover:text-flame transition-colors leading-tight">
                         {site.name}
                       </p>
-                      <p className="text-[11px] text-ink-soft leading-tight truncate mt-0.5">
+                      <p className="text-[11px] text-cream/40 leading-tight truncate mt-0.5">
                         {site.label}
                       </p>
                     </div>
-                    <span className="ml-auto shrink-0 font-mono text-xs text-linen group-hover:text-rust transition-colors" aria-hidden>
+                    <span className="ml-auto shrink-0 font-mono text-xs text-cream/25 group-hover:text-flame transition-colors" aria-hidden>
                       →
                     </span>
                   </a>
