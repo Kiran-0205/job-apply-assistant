@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { auth } from "@/auth";
+import { SignOutButton } from "@/components/SignOutButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,11 +20,13 @@ export const metadata: Metadata = {
   description: "Human-in-the-loop job application helper",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html
       lang="en"
@@ -40,18 +44,23 @@ export default function RootLayout({
               </span>
             </Link>
             <nav className="flex items-center gap-1">
-              <Link
-                href="/templates"
-                className="px-3 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 rounded-lg hover:bg-stone-100 transition-colors"
-              >
-                Templates
-              </Link>
-              <Link
-                href="/profile"
-                className="px-3 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 rounded-lg hover:bg-stone-100 transition-colors"
-              >
-                Profile
-              </Link>
+              {session?.user && (
+                <>
+                  <Link
+                    href="/templates"
+                    className="px-3 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 rounded-lg hover:bg-stone-100 transition-colors"
+                  >
+                    Templates
+                  </Link>
+                  <Link
+                    href="/profile"
+                    className="px-3 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-900 rounded-lg hover:bg-stone-100 transition-colors"
+                  >
+                    Profile
+                  </Link>
+                  <SignOutButton />
+                </>
+              )}
             </nav>
           </div>
         </header>

@@ -1,13 +1,21 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
-// This is a single-user, local-first app: there's exactly one candidate whose
-// profile drives generation. Rather than hardcoding a personal email anywhere,
-// we treat the first user row as "the app user", creating a blank one on first
-// run. The user then fills in their details on the Profile page.
-const PLACEHOLDER_EMAIL = "you@example.com";
+// Identifies the seeded single-user placeholder account so the Google
+// sign-in flow can claim it on first real login (see src/auth.ts).
+export const PLACEHOLDER_EMAIL = "you@example.com";
 
+// Resolves the signed-in user's row, which drives every page and API route.
+// Pages that call this should be reachable only when authenticated — proxy.ts
+// redirects unauthenticated requests to /signin before they get here, but we
+// redirect too as a defense in depth.
 export async function getAppUser() {
-  const existing = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
-  if (existing) return existing;
-  return prisma.user.create({ data: { email: PLACEHOLDER_EMAIL } });
+  const session = await auth();
+  if (!session?.user?.id) redirect("/signin");
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) redirect("/signin");
+
+  return user;
 }
