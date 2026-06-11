@@ -17,7 +17,7 @@ export type ProfileValues = {
 };
 
 const FIELD_CLASS =
-  "w-full border border-stone-200 rounded-xl p-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow";
+  "w-full bg-paper border border-linen p-3 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-rust focus:ring-1 focus:ring-rust/40 transition-shadow";
 
 function Field({
   label,
@@ -30,8 +30,8 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium text-stone-500">{label}</span>
-      {hint && <span className="text-xs text-stone-400"> · {hint}</span>}
+      <span className="font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-ink">{label}</span>
+      {hint && <span className="text-xs text-ink-soft"> · {hint}</span>}
       <div className="mt-1.5">{children}</div>
     </label>
   );
@@ -166,17 +166,17 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         </Field>
       </div>
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-rust font-medium">{error}</p>}
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={saving}
-          className="bg-stone-900 text-white py-2.5 px-5 rounded-xl text-sm font-medium hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
+          className="bg-rust text-cream py-2.5 px-5 font-mono text-xs font-bold uppercase tracking-[0.2em] hover:bg-rust-dark cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
         >
           {saving ? "Saving…" : "Save profile"}
         </button>
-        {saved && <span className="text-sm text-emerald-600">Saved ✓</span>}
+        {saved && <span className="font-mono text-xs font-bold text-rust uppercase tracking-[0.12em]">Saved ✓</span>}
       </div>
     </form>
   );

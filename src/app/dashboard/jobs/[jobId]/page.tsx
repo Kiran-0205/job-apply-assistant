@@ -7,11 +7,22 @@ import { ArtifactSection, type ArtifactItem } from "@/components/ArtifactSection
 import { DeleteJobButton } from "@/components/DeleteJobButton";
 import { ArtifactType } from "@prisma/client";
 
-const METHOD_STYLES: Record<string, string> = {
-  EMAIL: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
-  PORTAL: "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
-  UNKNOWN: "bg-stone-100 text-stone-500 ring-1 ring-stone-200",
+const STAMP_STYLES: Record<string, string> = {
+  EMAIL: "border-rust text-rust",
+  PORTAL: "border-ink text-ink",
+  UNKNOWN: "border-ink-soft text-ink-soft",
 };
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-3">
+      <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
+        {children}
+      </h2>
+      <div className="w-10 h-0.5 bg-rust mt-2" aria-hidden />
+    </div>
+  );
+}
 
 export default async function JobDetailPage({
   params,
@@ -45,30 +56,33 @@ export default async function JobDetailPage({
         <div className="flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-ink-soft hover:text-rust transition-colors"
           >
-            <span aria-hidden>←</span> Dashboard
+            <span aria-hidden>←</span> Back to cases
           </Link>
           <DeleteJobButton jobId={job.id} />
         </div>
 
         {/* Job header */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-6 sm:p-7">
+        <div className="bg-cream border border-linen p-6 sm:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wider mb-1">
+              <p className="font-mono text-[11px] font-bold text-rust uppercase tracking-[0.25em] mb-2">
+                Case file
+              </p>
+              <h1 className="font-mono text-2xl font-bold text-ink">
+                {job.company ?? "Unknown Company"}
+              </h1>
+              <p className="text-sm text-ink-soft mt-1">
                 {job.title ?? "Unknown role"}
                 {job.location ? ` · ${job.location}` : ""}
               </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-                {job.company ?? "Unknown Company"}
-              </h1>
               {job.jdSummary && (
-                <p className="text-sm text-stone-500 mt-3 leading-relaxed max-w-prose">{job.jdSummary}</p>
+                <p className="text-sm text-ink-soft mt-3 leading-relaxed max-w-prose">{job.jdSummary}</p>
               )}
             </div>
             <span
-              className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${METHOD_STYLES[job.applyMethod]}`}
+              className={`font-mono text-[11px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 border-2 shrink-0 -rotate-3 ${STAMP_STYLES[job.applyMethod]}`}
             >
               {job.applyMethod}
             </span>
@@ -76,14 +90,14 @@ export default async function JobDetailPage({
 
           {/* Apply info */}
           {job.applyMethod === "PORTAL" && job.portalUrl && (
-            <div className="mt-5 pt-5 border-t border-stone-100 text-sm">
+            <div className="mt-5 pt-5 border-t border-linen text-sm">
               <p className="truncate">
-                <span className="text-stone-400">Apply via </span>
+                <span className="text-ink-soft">Apply via </span>
                 <a
                   href={job.portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline font-medium break-all"
+                  className="text-rust hover:underline underline-offset-2 font-medium break-all"
                 >
                   {job.portalUrl}
                 </a>
@@ -94,17 +108,15 @@ export default async function JobDetailPage({
 
         {/* Skills & qualifications */}
         {(job.skills.length > 0 || job.qualifications.length > 0) && (
-          <div className="bg-white border border-stone-200/80 rounded-2xl p-6 sm:p-7 grid sm:grid-cols-2 gap-6">
+          <div className="bg-cream border border-linen p-6 sm:p-7 grid sm:grid-cols-2 gap-6">
             {job.skills.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">
-                  Key skills
-                </h2>
+                <SectionLabel>Key skills</SectionLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {job.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="text-xs font-medium px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700"
+                      className="font-mono text-[11px] font-bold px-2 py-0.5 border border-ink-soft/50 text-ink"
                     >
                       {skill}
                     </span>
@@ -114,13 +126,11 @@ export default async function JobDetailPage({
             )}
             {job.qualifications.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">
-                  Qualifications
-                </h2>
+                <SectionLabel>Qualifications</SectionLabel>
                 <ul className="space-y-1.5">
                   {job.qualifications.map((q) => (
-                    <li key={q} className="text-sm text-stone-600 leading-snug flex gap-2">
-                      <span className="text-stone-300" aria-hidden>·</span>
+                    <li key={q} className="text-sm text-ink-soft leading-snug flex gap-2">
+                      <span className="text-rust" aria-hidden>—</span>
                       <span>{q}</span>
                     </li>
                   ))}
@@ -132,12 +142,10 @@ export default async function JobDetailPage({
 
         {/* Contact email, when one was found in the posting */}
         {job.contactEmail && (
-          <div className="bg-white border border-stone-200/80 rounded-2xl p-6 sm:p-7 flex items-center justify-between gap-4">
+          <div className="bg-cream border border-linen p-6 sm:p-7 flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1">
-                Contact email
-              </h2>
-              <p className="text-sm font-medium text-stone-800 truncate">{job.contactEmail}</p>
+              <SectionLabel>Contact email</SectionLabel>
+              <p className="font-mono text-sm font-bold text-ink truncate">{job.contactEmail}</p>
             </div>
             <CopyButton text={job.contactEmail} />
           </div>

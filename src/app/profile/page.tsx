@@ -23,14 +23,17 @@ export default async function ProfilePage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors"
+          className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-ink-soft hover:text-rust transition-colors"
         >
-          <span aria-hidden>←</span> Dashboard
+          <span aria-hidden>←</span> Back to cases
         </Link>
 
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-6 sm:p-7">
-          <h1 className="text-xl font-semibold tracking-tight text-stone-900">Your profile</h1>
-          <p className="text-sm text-stone-500 mt-1 mb-6">
+        <div className="bg-cream border border-linen p-6 sm:p-7">
+          <h1 className="font-mono text-lg font-bold text-ink uppercase tracking-[0.15em]">
+            Your profile
+          </h1>
+          <div className="w-10 h-0.5 bg-rust mt-2" aria-hidden />
+          <p className="text-sm text-ink-soft mt-3 mb-6">
             Every email, referral request, and connection note is written from these details.
             Fill them in once — they apply to every job you add.
           </p>

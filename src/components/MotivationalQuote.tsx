@@ -70,26 +70,32 @@ export function MotivationalQuote() {
 
   return (
     <div
-      className="relative bg-white border border-stone-200/80 rounded-2xl px-5 py-7 sm:px-8 sm:py-8 overflow-hidden select-none"
+      className="relative bg-cream border border-linen px-5 py-7 sm:px-8 sm:py-8 overflow-hidden select-none"
       aria-hidden="true"
     >
+      {/* Corner ticks, like a printed form. */}
+      <span className="absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-rust/70" />
+      <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-rust/70" />
+      <span className="absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-rust/70" />
+      <span className="absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-rust/70" />
+
       <div className="relative h-7 sm:h-9 flex items-center justify-center text-center">
         {showBefore && (
           <p
-            className={`absolute inset-0 flex items-center justify-center whitespace-nowrap text-sm sm:text-xl md:text-2xl font-semibold text-stone-900 tracking-tight transition-opacity duration-300 ${
+            className={`absolute inset-0 flex items-center justify-center whitespace-nowrap font-mono text-sm sm:text-lg md:text-xl font-bold text-ink transition-opacity duration-300 ${
               phase === "revealing" ? "opacity-0" : "opacity-100"
             }`}
           >
             {typed}
             {phase === "typing" && (
               <span
-                className="inline-block w-[2px] h-[0.9em] bg-rose-400 ml-1"
+                className="inline-block w-[2px] h-[0.9em] bg-rust ml-1"
                 style={{ animation: "blink-cursor 0.9s steps(1) infinite" }}
               />
             )}
             {showSlash && (
               <span
-                className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 bg-rose-500 origin-left rounded-full shadow-[0_0_12px_rgba(244,63,94,0.8)]"
+                className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 bg-rust origin-left shadow-[0_0_12px_rgba(140,49,32,0.6)]"
                 style={{ animation: `slash-sweep ${SLASH_DURATION}ms ease-out forwards` }}
               />
             )}
@@ -97,7 +103,7 @@ export function MotivationalQuote() {
         )}
         {showAfter && (
           <p
-            className="absolute inset-0 flex items-center justify-center whitespace-nowrap text-sm sm:text-xl md:text-2xl font-semibold text-indigo-600 tracking-tight"
+            className="absolute inset-0 flex items-center justify-center whitespace-nowrap font-mono text-sm sm:text-lg md:text-xl font-bold text-rust"
             style={{ animation: `rise-glow ${REVEAL_DURATION}ms ease-out forwards` }}
           >
             {after}

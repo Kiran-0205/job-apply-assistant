@@ -1,29 +1,49 @@
 @import "tailwindcss";
 
+/*
+ * Vintage counsel theme — parchment paper, typewriter type, brick-red ink,
+ * near-black panels. Flat print look: thin borders, square corners.
+ */
 :root {
-  --background: #faf9f7;
-  --foreground: #1c1917;
+  --background: #ece4d3;
+  --foreground: #211b14;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-paper: #ece4d3;
+  --color-cream: #f5f0e3;
+  --color-ink: #211b14;
+  --color-ink-soft: #7d7060;
+  --color-rust: #8c3120;
+  --color-rust-dark: #6d2517;
+  --color-coal: #16120e;
+  --color-linen: #d6cab2;
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-typewriter);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  /* Faint paper grain. */
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(33, 27, 20, 0.015) 0px,
+    rgba(33, 27, 20, 0.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
 }
 
 ::selection {
-  background: rgb(79 70 229 / 0.18);
+  background: rgb(140 49 32 / 0.22);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(0 0 0 / 0.15) transparent;
+  scrollbar-color: rgb(33 27 20 / 0.25) transparent;
 }
 
 /* Blinking typewriter cursor. */
@@ -57,11 +77,11 @@ body {
   0% {
     opacity: 0;
     transform: translateY(14px);
-    text-shadow: 0 0 0 rgba(129, 140, 248, 0);
+    text-shadow: 0 0 0 rgba(140, 49, 32, 0);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    text-shadow: 0 0 18px rgba(129, 140, 248, 0.55);
+    text-shadow: 0 0 18px rgba(140, 49, 32, 0.35);
   }
 }

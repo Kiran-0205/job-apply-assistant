@@ -40,6 +40,9 @@ function formatTimestamp(iso: string): string {
   });
 }
 
+const ACTION_LINK_CLASS =
+  "font-mono text-[11px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 border border-ink-soft/50 text-ink hover:border-rust hover:text-rust transition-colors shrink-0";
+
 export function ArtifactSection({
   jobId,
   type,
@@ -102,7 +105,7 @@ export function ArtifactSection({
             href={gmailLink(contactEmail, subject, body)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-medium px-2.5 py-1 rounded-md border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+            className={ACTION_LINK_CLASS}
           >
             Open in Gmail
           </a>
@@ -119,7 +122,7 @@ export function ArtifactSection({
           href={linkedinSearch(company)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-medium px-2.5 py-1 rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors shrink-0"
+          className={ACTION_LINK_CLASS}
         >
           Search on LinkedIn
         </a>
@@ -128,7 +131,7 @@ export function ArtifactSection({
             href={linkedinSearch(`${company} ${school}`)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-medium px-2.5 py-1 rounded-md border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors shrink-0"
+            className={ACTION_LINK_CLASS}
           >
             Find {school} alumni
           </a>
@@ -137,36 +140,43 @@ export function ArtifactSection({
     ) : null;
 
   return (
-    <div className="bg-white border border-stone-200/80 rounded-2xl p-6 sm:p-7">
-      <div className="flex items-center justify-between mb-1.5 gap-3">
-        <h2 className="text-sm font-semibold text-stone-900">{title}</h2>
-        <div className="flex items-center gap-2 shrink-0">
+    <div className="bg-cream border border-linen p-6 sm:p-7">
+      <div className="flex items-start justify-between mb-1.5 gap-3">
+        <div>
+          <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
+            {title}
+          </h2>
+          <div className="w-10 h-0.5 bg-rust mt-2" aria-hidden />
+        </div>
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           {linkedinAction}
           <button
             onClick={generate}
             disabled={generating}
-            className="px-3.5 py-1.5 bg-stone-900 text-white text-xs font-medium rounded-lg hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 shrink-0"
+            className="px-3.5 py-1.5 bg-rust text-cream font-mono text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-rust-dark cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 shrink-0"
           >
             {generating ? "Generating…" : buttonLabel}
           </button>
         </div>
       </div>
-      <p className="text-xs text-stone-400 mb-5">{description}</p>
+      <p className="text-xs text-ink-soft mt-2 mb-5">{description}</p>
 
-      {error && <p className="mb-3 text-sm text-rose-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-rust font-medium">{error}</p>}
 
       {!selected ? (
-        <div className="border border-dashed border-stone-200 rounded-xl py-10 text-center">
-          <p className="text-sm text-stone-400">Nothing generated yet — click {buttonLabel} above.</p>
+        <div className="border-2 border-dashed border-linen py-10 text-center">
+          <p className="font-mono text-xs text-ink-soft">
+            Nothing on record yet — click {buttonLabel} above.
+          </p>
         </div>
       ) : (
-        <div className="border border-stone-100 rounded-xl p-4 sm:p-5 bg-stone-50/60">
+        <div className="border border-linen p-4 sm:p-5 bg-paper">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             {artifacts.length > 1 ? (
               <select
                 value={selected.id}
                 onChange={(e) => setSelectedId(e.target.value)}
-                className="text-xs font-medium border border-stone-200 rounded-md px-2 py-1 bg-white text-stone-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                className="font-mono text-[11px] font-bold uppercase border border-linen px-2 py-1 bg-cream text-ink focus:outline-none focus:border-rust"
               >
                 {artifacts.map((a, i) => (
                   <option key={a.id} value={a.id}>
@@ -176,14 +186,16 @@ export function ArtifactSection({
                 ))}
               </select>
             ) : (
-              <span className="text-xs text-stone-400">{formatTimestamp(selected.createdAt)}</span>
+              <span className="font-mono text-[11px] text-ink-soft">
+                {formatTimestamp(selected.createdAt)}
+              </span>
             )}
             <div className="flex gap-2 shrink-0 ml-auto">
               {extraAction}
               <CopyButton text={selected.content} />
             </div>
           </div>
-          <pre className="whitespace-pre-wrap text-sm text-stone-700 font-sans leading-relaxed">
+          <pre className="whitespace-pre-wrap text-sm text-ink font-mono leading-relaxed">
             {selected.content}
           </pre>
         </div>

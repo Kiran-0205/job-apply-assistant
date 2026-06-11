@@ -8,6 +8,9 @@ type Tab = "text" | "url";
 // A pasted value that is just a bare link — used to nudge the user toward the URL tab.
 const BARE_URL_RE = /^https?:\/\/\S+$/i;
 
+const FIELD_CLASS =
+  "w-full bg-paper border border-linen p-3.5 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-rust focus:ring-1 focus:ring-rust/40 transition-shadow";
+
 export function AddJobForm() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("url");
@@ -42,22 +45,27 @@ export function AddJobForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-stone-200/80 rounded-2xl p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
+    <form onSubmit={handleSubmit} className="bg-cream border border-linen p-5 sm:p-6">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-stone-900">Add a posting</h2>
-          <p className="text-xs text-stone-400 mt-0.5">Paste the raw text or drop a career-page link — we&apos;ll extract the rest.</p>
+          <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
+            Open a Case
+          </h2>
+          <div className="w-10 h-0.5 bg-rust mt-2 mb-2" aria-hidden />
+          <p className="text-xs text-ink-soft">
+            Paste the raw text or drop a career-page link — we&apos;ll extract the rest.
+          </p>
         </div>
-        <div className="flex gap-1 bg-stone-100 rounded-lg p-1">
+        <div className="flex border border-linen shrink-0">
           {(["text", "url"] as Tab[]).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => { setTab(t); setValue(""); setError(null); }}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-colors cursor-pointer ${
                 tab === t
-                  ? "bg-white text-stone-900 shadow-sm"
-                  : "text-stone-400 hover:text-stone-600"
+                  ? "bg-coal text-cream"
+                  : "bg-transparent text-ink-soft hover:text-ink"
               }`}
             >
               {t === "text" ? "Paste text" : "URL"}
@@ -74,15 +82,15 @@ export function AddJobForm() {
             placeholder="Paste the job description here…"
             rows={6}
             required
-            className="w-full border border-stone-200 rounded-xl p-3.5 text-sm text-stone-800 placeholder:text-stone-400 resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow"
+            className={`${FIELD_CLASS} resize-y`}
           />
           {pastedUrlInText && (
-            <p className="mt-2 text-xs text-stone-500">
+            <p className="mt-2 text-xs text-ink-soft">
               That looks like a link.{" "}
               <button
                 type="button"
                 onClick={() => { setTab("url"); setError(null); }}
-                className="font-medium text-indigo-600 hover:underline cursor-pointer"
+                className="font-bold text-rust hover:underline underline-offset-2 cursor-pointer"
               >
                 Switch to the URL tab
               </button>{" "}
@@ -97,20 +105,20 @@ export function AddJobForm() {
           onChange={(e) => setValue(e.target.value)}
           placeholder="https://careers.company.com/job/123"
           required
-          className="w-full border border-stone-200 rounded-xl p-3.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-shadow"
+          className={FIELD_CLASS}
         />
       )}
 
       {error && (
-        <p className="mt-2.5 text-sm text-rose-600">{error}</p>
+        <p className="mt-2.5 text-sm text-rust font-medium">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={loading || !value.trim() || pastedUrlInText}
-        className="mt-3.5 w-full bg-stone-900 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
+        className="mt-4 w-full bg-rust text-cream py-2.5 font-mono text-xs font-bold uppercase tracking-[0.25em] hover:bg-rust-dark cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
       >
-        {loading ? "Extracting…" : "Add job"}
+        {loading ? "Extracting…" : "File the case"}
       </button>
     </form>
   );
