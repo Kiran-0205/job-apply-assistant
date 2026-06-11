@@ -80,6 +80,7 @@ model User {
   // is generic: whoever fills this in is who the materials are written for.
   headline    String? // e.g. "Final-year CS student transitioning to SDE roles"
   location    String? // e.g. "Bengaluru, India"
+  school      String? // e.g. "IIT Guwahati" - used to find alumni at target companies
   summary     String? @db.Text // free-text background: education, experience, achievements
   skills      String? // free-text skills / tech stack, e.g. "TypeScript, React, PostgreSQL"
   githubUrl   String?

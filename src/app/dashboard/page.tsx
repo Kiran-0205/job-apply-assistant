@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAppUser } from "@/lib/user";
 import { AddJobForm } from "@/components/AddJobForm";
 import { DeleteJobIcon } from "@/components/DeleteJobIcon";
+import { MotivationalQuote } from "@/components/MotivationalQuote";
 
 const JOB_SITES = [
   { name: "LinkedIn",    url: "https://www.linkedin.com/jobs/",        label: "Professional network",   color: "bg-blue-50 text-blue-700" },
@@ -78,7 +79,12 @@ export default async function DashboardPage() {
 
         {/* ── Left column: form + history ── */}
         <div className="space-y-10">
-          <AddJobForm />
+          <div>
+            <MotivationalQuote />
+            <div className="mt-4">
+              <AddJobForm />
+            </div>
+          </div>
 
           <section>
             <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">

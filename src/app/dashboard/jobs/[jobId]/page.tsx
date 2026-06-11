@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getAppUser } from "@/lib/user";
 import { CopyButton } from "@/components/CopyButton";
 import { ArtifactSection, type ArtifactItem } from "@/components/ArtifactSection";
 import { DeleteJobButton } from "@/components/DeleteJobButton";
@@ -19,6 +20,7 @@ export default async function JobDetailPage({
 }) {
   const { jobId } = await params;
 
+  const user = await getAppUser();
   const job = await prisma.job.findUnique({
     where: { id: jobId },
     include: { artifacts: { orderBy: { createdAt: "desc" } } },
@@ -161,6 +163,7 @@ export default async function JobDetailPage({
           buttonLabel="Generate referral"
           artifacts={artifactsByType.REFERRAL_REQUEST}
           company={job.company}
+          school={user.school}
         />
 
         {/* Connection request note */}

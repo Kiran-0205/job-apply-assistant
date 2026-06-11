@@ -17,6 +17,7 @@ const ProfileSchema = z.object({
   email: z.string().email("must be a valid email").or(z.literal("")).optional(),
   headline: optionalText,
   location: optionalText,
+  school: optionalText,
   summary: optionalText,
   skills: optionalText,
   githubUrl: optionalText,

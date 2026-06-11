@@ -10,6 +10,7 @@ export default async function ProfilePage() {
     email: user.email === "you@example.com" ? "" : user.email,
     headline: user.headline ?? "",
     location: user.location ?? "",
+    school: user.school ?? "",
     summary: user.summary ?? "",
     skills: user.skills ?? "",
     githubUrl: user.githubUrl ?? "",

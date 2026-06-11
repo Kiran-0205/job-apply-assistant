@@ -8,6 +8,7 @@ export type ProfileValues = {
   email: string;
   headline: string;
   location: string;
+  school: string;
   summary: string;
   skills: string;
   githubUrl: string;
@@ -109,6 +110,15 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           />
         </Field>
       </div>
+
+      <Field label="School" hint="used to find alumni at a company for referrals">
+        <input
+          className={FIELD_CLASS}
+          value={values.school}
+          onChange={(e) => set("school", e.target.value)}
+          placeholder="IIT Guwahati"
+        />
+      </Field>
 
       <Field label="Background" hint="education, experience, achievements — the materials are written from this">
         <textarea

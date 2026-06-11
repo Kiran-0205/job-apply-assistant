@@ -25,8 +25,8 @@ function gmailLink(to: string, subject: string, body: string): string {
   return `https://mail.google.com/mail/?${params.toString()}`;
 }
 
-function linkedinSearch(company: string): string {
-  const params = new URLSearchParams({ keywords: company });
+function linkedinSearch(keywords: string): string {
+  const params = new URLSearchParams({ keywords });
   return `https://www.linkedin.com/search/results/people/?${params.toString()}`;
 }
 
@@ -49,6 +49,7 @@ export function ArtifactSection({
   artifacts,
   contactEmail,
   company,
+  school,
 }: {
   jobId: string;
   type: ArtifactType;
@@ -58,6 +59,7 @@ export function ArtifactSection({
   artifacts: ArtifactItem[];
   contactEmail?: string | null;
   company?: string | null;
+  school?: string | null;
 }) {
   const router = useRouter();
   const [generating, setGenerating] = useState(false);
@@ -112,14 +114,26 @@ export function ArtifactSection({
   // Independent of any generated content, so it's available right away.
   const linkedinAction =
     type === "REFERRAL_REQUEST" && company ? (
-      <a
-        href={linkedinSearch(company)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs font-medium px-2.5 py-1 rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors shrink-0"
-      >
-        Search on LinkedIn
-      </a>
+      <>
+        <a
+          href={linkedinSearch(company)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-medium px-2.5 py-1 rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors shrink-0"
+        >
+          Search on LinkedIn
+        </a>
+        {school && (
+          <a
+            href={linkedinSearch(`${company} ${school}`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium px-2.5 py-1 rounded-md border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors shrink-0"
+          >
+            Find {school} alumni
+          </a>
+        )}
+      </>
     ) : null;
 
   return (

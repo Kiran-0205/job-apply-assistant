@@ -25,6 +25,7 @@ function candidateBlock(user: User): string {
   if (user.email) lines.push(`Email: ${user.email}`);
   if (user.headline) lines.push(`Headline: ${user.headline}`);
   if (user.location) lines.push(`Location: ${user.location}`);
+  if (user.school) lines.push(`School: ${user.school}`);
   if (user.summary) lines.push(`Background: ${user.summary}`);
   if (user.skills) lines.push(`Skills: ${user.skills}`);
   if (user.githubUrl) lines.push(`GitHub: ${user.githubUrl}`);
