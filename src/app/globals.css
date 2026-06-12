@@ -1,55 +1,36 @@
 @import "tailwindcss";
 
 /*
- * Vintage counsel theme — parchment paper, typewriter type, brick-red ink,
- * near-black panels. Flat print look: thin borders, square corners.
+ * Minimal, calm design system — near-white canvas, white cards with hairline
+ * borders and soft shadows, zinc text scale, single indigo accent.
  */
 :root {
-  --background: #e5dbc6;
-  --foreground: #211b14;
+  --background: #fafafa;
+  --foreground: #18181b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-paper: #ece4d3;
-  --color-cream: #f5f0e3;
-  --color-ink: #211b14;
-  --color-ink-soft: #7d7060;
-  --color-rust: #8c3120;
-  --color-rust-dark: #6d2517;
-  --color-flame: #c25540;
-  --color-coal: #16120e;
-  --color-linen: #d6cab2;
-  /* Hard offset "print" shadows — the depth system. */
-  --shadow-card: 4px 4px 0 rgb(22 18 14 / 0.1);
-  --shadow-card-lg: 7px 7px 0 rgb(22 18 14 / 0.14);
-  --shadow-card-rust: 6px 6px 0 rgb(140 49 32 / 0.28);
-  --shadow-panel: 7px 7px 0 rgb(140 49 32 / 0.55);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-typewriter);
+  --font-mono: var(--font-geist-mono);
+  /* Soft layered shadows for cards. */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -8px rgb(0 0 0 / 0.1);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Faint paper grain. */
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(33, 27, 20, 0.015) 0px,
-    rgba(33, 27, 20, 0.015) 1px,
-    transparent 1px,
-    transparent 3px
-  );
 }
 
 ::selection {
-  background: rgb(140 49 32 / 0.22);
+  background: rgb(99 102 241 / 0.16);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(33 27 20 / 0.25) transparent;
+  scrollbar-color: rgb(0 0 0 / 0.15) transparent;
 }
 
 /* Blinking typewriter cursor. */
@@ -62,19 +43,19 @@ body {
   }
 }
 
-/* A bold accent slash sweeps in from the left, then fades with the old line. */
-@keyframes slash-sweep {
+/* A thick strike draws across the text and lands with a small overshoot thump. */
+@keyframes strike-in {
   0% {
-    transform: rotate(-6deg) scaleX(0);
-    opacity: 1;
+    transform: rotate(-2deg) scaleX(0) scaleY(1);
   }
-  65% {
-    transform: rotate(-6deg) scaleX(1);
-    opacity: 1;
+  70% {
+    transform: rotate(-2deg) scaleX(1) scaleY(1);
+  }
+  82% {
+    transform: rotate(-2deg) scaleX(1) scaleY(1.6);
   }
   100% {
-    transform: rotate(-6deg) scaleX(1);
-    opacity: 0;
+    transform: rotate(-2deg) scaleX(1) scaleY(1);
   }
 }
 
@@ -83,11 +64,11 @@ body {
   0% {
     opacity: 0;
     transform: translateY(14px);
-    text-shadow: 0 0 0 rgba(194, 85, 64, 0);
+    text-shadow: 0 0 0 rgba(99, 102, 241, 0);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    text-shadow: 0 0 18px rgba(194, 85, 64, 0.55);
+    text-shadow: 0 0 18px rgba(99, 102, 241, 0.35);
   }
 }

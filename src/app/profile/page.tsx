@@ -20,30 +20,21 @@ export default async function ProfilePage() {
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-10">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-5">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-ink-soft hover:text-rust transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
         >
-          <span aria-hidden>←</span> Back to cases
+          <span aria-hidden>←</span> Dashboard
         </Link>
 
-        <div className="bg-cream border-2 border-coal shadow-card-lg">
-          <div className="bg-coal px-6 sm:px-7 py-2.5 flex items-center justify-between">
-            <h1 className="font-mono text-sm font-bold text-cream uppercase tracking-[0.25em]">
-              Your profile
-            </h1>
-            <span className="font-mono text-[10px] text-flame uppercase tracking-[0.2em]">
-              Client record
-            </span>
-          </div>
-          <div className="p-6 sm:p-7">
-            <p className="text-sm text-ink-soft mb-6">
-              Every email, referral request, and connection note is written from these details.
-              Fill them in once — they apply to every job you add.
-            </p>
-            <ProfileForm initial={initial} />
-          </div>
+        <div className="bg-white border border-zinc-200/70 rounded-2xl p-6 sm:p-7 shadow-card">
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900">Your profile</h1>
+          <p className="text-sm text-zinc-500 mt-1 mb-6">
+            Every email, referral request, and connection note is written from these details.
+            Fill them in once — they apply to every job you add.
+          </p>
+          <ProfileForm initial={initial} />
         </div>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ArtifactType, User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { splitArtifactContent } from "@/lib/artifact";
 
 const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -55,6 +56,15 @@ function templateInstruction(template: string | null): string {
   return `\n\nThe candidate has provided this template as a starting point. Adapt it for this specific job — keep its structure, tone, and format, but tailor the details:\n"""\n${template.trim()}\n"""`;
 }
 
+// Strict output contract: the sendable text and any commentary must be
+// separable, so the UI can offer copy on exactly what gets sent and nothing else.
+const OUTPUT_FORMAT = `
+
+OUTPUT FORMAT (strict):
+- Put the exact, ready-to-send text inside <message></message> tags. No preamble like "Here's a draft", no closing remarks — only what the recipient should receive.
+- If you have comments for the candidate (placeholders they must fill, caveats, suggestions), put them inside <notes></notes> tags after the message. Omit the tags if you have nothing to add.
+- Output nothing outside these tags.`;
+
 function jobContextBlock(job: JobContext): string {
   return `Company: ${job.company ?? "Unknown"}
 Role: ${job.title ?? "Unknown"}
@@ -77,7 +87,7 @@ Write a concise, professional cold-application email. Guidelines:
 - 3-4 short paragraphs: hook, why this role, relevant skills/projects, call to action
 - Tone: confident and direct, not sycophantic
 - End with the candidate's name and contact info
-- Do not invent projects or experience not mentioned above${templateInstruction(template)}`;
+- Do not invent projects or experience not mentioned above${templateInstruction(template)}${OUTPUT_FORMAT}`;
 
   const user = `Write an application email for this job:
 
@@ -100,7 +110,7 @@ Write a short, friendly referral request (~150 words). Should:
 - Briefly say why the candidate is a fit
 - Ask directly but politely if the contact would be comfortable referring them
 - Offer to share resume
-- Not be sycophantic or excessively long${templateInstruction(template)}`;
+- Not be sycophantic or excessively long${templateInstruction(template)}${OUTPUT_FORMAT}`;
 
   const user = `Write a referral request message for this job:
 
@@ -115,7 +125,7 @@ async function generateConnectionNote(job: JobContext, candidate: string, templa
 HARD CONSTRAINT: The note MUST be under 300 characters (LinkedIn's limit). Be direct and personalized.
 
 About the candidate:
-${candidate}${templateInstruction(template)}`;
+${candidate}${templateInstruction(template)}${OUTPUT_FORMAT}`;
 
   const user = `Write a LinkedIn connection note to someone who works at ${job.company ?? "this company"} for the role of ${job.title ?? "software engineer"}.
 
@@ -124,7 +134,7 @@ Keep it under 300 characters. Mention the role. Be specific, not generic.`;
   return llm(system, user);
 }
 
-export type GenerateResult = { id: string; type: ArtifactType; content: string };
+export type GenerateResult = { id: string; type: ArtifactType; content: string; notes: string | null };
 
 // Each artifact type is generated independently and on demand — the user
 // picks which materials they need for a given job, rather than us deciding
@@ -154,21 +164,27 @@ export async function generateArtifact(jobId: string, type: ArtifactType): Promi
     rawText: job.rawText,
   };
 
-  let content: string;
+  let raw: string;
   switch (type) {
     case "EMAIL_DRAFT":
-      content = await generateEmailDraft(ctx, candidate, job.user.emailTemplate);
+      raw = await generateEmailDraft(ctx, candidate, job.user.emailTemplate);
       break;
     case "REFERRAL_REQUEST":
-      content = await generateReferralRequest(ctx, candidate, job.user.referralTemplate);
+      raw = await generateReferralRequest(ctx, candidate, job.user.referralTemplate);
       break;
     case "CONNECTION_NOTE":
-      content = await generateConnectionNote(ctx, candidate, job.user.connectionTemplate);
+      raw = await generateConnectionNote(ctx, candidate, job.user.connectionTemplate);
       break;
   }
 
+  // Separate the sendable message from any model commentary, so the stored
+  // content is exactly what the user will copy and send.
+  const { message, notes } = splitArtifactContent(raw);
+
   // Append-only: create a new row, never overwrite existing artifacts
-  const created = await prisma.generatedArtifact.create({ data: { type, content, jobId: job.id } });
+  const created = await prisma.generatedArtifact.create({
+    data: { type, content: message, notes, jobId: job.id },
+  });
 
   // Bump applicationStatus to DRAFTED if still at SAVED
   if (job.applicationStatus === "SAVED") {
@@ -178,5 +194,5 @@ export async function generateArtifact(jobId: string, type: ArtifactType): Promi
     });
   }
 
-  return { id: created.id, type: created.type, content: created.content };
+  return { id: created.id, type: created.type, content: created.content, notes: created.notes };
 }

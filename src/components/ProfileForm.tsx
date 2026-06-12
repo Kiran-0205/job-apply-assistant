@@ -17,7 +17,7 @@ export type ProfileValues = {
 };
 
 const FIELD_CLASS =
-  "w-full bg-paper border border-linen p-3 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-rust focus:ring-1 focus:ring-rust/40 transition-shadow";
+  "w-full bg-white border border-zinc-200 rounded-xl p-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 transition-shadow";
 
 function Field({
   label,
@@ -30,8 +30,8 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-ink">{label}</span>
-      {hint && <span className="text-xs text-ink-soft"> · {hint}</span>}
+      <span className="text-xs font-medium text-zinc-700">{label}</span>
+      {hint && <span className="text-xs text-zinc-400"> · {hint}</span>}
       <div className="mt-1.5">{children}</div>
     </label>
   );
@@ -166,17 +166,17 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         </Field>
       </div>
 
-      {error && <p className="text-sm text-rust font-medium">{error}</p>}
+      {error && <p className="text-sm text-rose-600">{error}</p>}
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={saving}
-          className="bg-rust text-cream py-2.5 px-5 font-mono text-xs font-bold uppercase tracking-[0.2em] hover:bg-rust-dark cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
+          className="bg-zinc-900 text-white py-2.5 px-5 rounded-xl text-sm font-medium hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
         >
           {saving ? "Saving…" : "Save profile"}
         </button>
-        {saved && <span className="font-mono text-xs font-bold text-rust uppercase tracking-[0.12em]">Saved ✓</span>}
+        {saved && <span className="text-sm text-emerald-600">Saved ✓</span>}
       </div>
     </form>
   );

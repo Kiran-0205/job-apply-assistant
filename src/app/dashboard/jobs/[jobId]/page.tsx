@@ -6,23 +6,16 @@ import { CopyButton } from "@/components/CopyButton";
 import { ArtifactSection, type ArtifactItem } from "@/components/ArtifactSection";
 import { DeleteJobButton } from "@/components/DeleteJobButton";
 import { ArtifactType } from "@prisma/client";
+import { splitArtifactContent } from "@/lib/artifact";
 
-const STAMP_STYLES: Record<string, string> = {
-  EMAIL: "border-rust text-rust",
-  PORTAL: "border-ink text-ink",
-  UNKNOWN: "border-ink-soft text-ink-soft",
+const METHOD_STYLES: Record<string, string> = {
+  EMAIL: "bg-emerald-50 text-emerald-700",
+  PORTAL: "bg-sky-50 text-sky-700",
+  UNKNOWN: "bg-zinc-100 text-zinc-500",
 };
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-3">
-      <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
-        {children}
-      </h2>
-      <div className="w-10 h-0.5 bg-rust mt-2" aria-hidden />
-    </div>
-  );
-}
+const CARD_CLASS =
+  "bg-white border border-zinc-200/70 rounded-2xl p-6 sm:p-7 shadow-card";
 
 export default async function JobDetailPage({
   params,
@@ -46,84 +39,84 @@ export default async function JobDetailPage({
     CONNECTION_NOTE: [],
   };
   for (const a of job.artifacts) {
-    artifactsByType[a.type].push({ id: a.id, content: a.content, createdAt: a.createdAt.toISOString() });
+    // Rows predating the notes column may still have preamble baked into the
+    // content — split it out so only the sendable message reaches the copy box.
+    const { message, notes } = splitArtifactContent(a.content);
+    artifactsByType[a.type].push({
+      id: a.id,
+      content: message,
+      notes: a.notes ?? notes,
+      createdAt: a.createdAt.toISOString(),
+    });
   }
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-10">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-5">
         {/* Back + delete */}
         <div className="flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-[0.18em] text-ink-soft hover:text-rust transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
           >
-            <span aria-hidden>←</span> Back to cases
+            <span aria-hidden>←</span> Dashboard
           </Link>
           <DeleteJobButton jobId={job.id} />
         </div>
 
-        {/* Job header — the case file itself, heaviest object on the page */}
-        <div className="bg-cream border-2 border-coal shadow-card-lg">
-          <div className="bg-coal px-6 sm:px-7 py-2.5 flex items-center justify-between">
-            <p className="font-mono text-[11px] font-bold text-cream uppercase tracking-[0.3em]">
-              Case file
-            </p>
-            <span className="font-mono text-[10px] text-flame uppercase tracking-[0.2em]">
-              Confidential
-            </span>
-          </div>
-          <div className="p-6 sm:p-7">
+        {/* Job header */}
+        <div className={CARD_CLASS}>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-mono text-2xl font-bold text-ink">
-                {job.company ?? "Unknown Company"}
-              </h1>
-              <p className="text-sm text-ink-soft mt-1">
+              <p className="text-xs font-medium text-zinc-400 mb-1">
                 {job.title ?? "Unknown role"}
                 {job.location ? ` · ${job.location}` : ""}
               </p>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+                {job.company ?? "Unknown Company"}
+              </h1>
               {job.jdSummary && (
-                <p className="text-sm text-ink-soft mt-3 leading-relaxed max-w-prose">{job.jdSummary}</p>
+                <p className="text-sm text-zinc-500 mt-3 leading-relaxed max-w-prose">
+                  {job.jdSummary}
+                </p>
               )}
             </div>
             <span
-              className={`font-mono text-[11px] font-bold uppercase tracking-[0.2em] px-2.5 py-1 border-2 shrink-0 -rotate-3 ${STAMP_STYLES[job.applyMethod]}`}
+              className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize shrink-0 ${METHOD_STYLES[job.applyMethod]}`}
             >
-              {job.applyMethod}
+              {job.applyMethod.toLowerCase()}
             </span>
           </div>
 
           {/* Apply info */}
           {job.applyMethod === "PORTAL" && job.portalUrl && (
-            <div className="mt-5 pt-5 border-t border-linen text-sm">
+            <div className="mt-5 pt-5 border-t border-zinc-100 text-sm">
               <p className="truncate">
-                <span className="text-ink-soft">Apply via </span>
+                <span className="text-zinc-400">Apply via </span>
                 <a
                   href={job.portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-rust hover:underline underline-offset-2 font-medium break-all"
+                  className="text-indigo-600 hover:underline underline-offset-2 font-medium break-all"
                 >
                   {job.portalUrl}
                 </a>
               </p>
             </div>
           )}
-          </div>
         </div>
 
         {/* Skills & qualifications */}
         {(job.skills.length > 0 || job.qualifications.length > 0) && (
-          <div className="bg-cream border border-ink/25 shadow-card p-6 sm:p-7 grid sm:grid-cols-2 gap-6">
+          <div className={`${CARD_CLASS} grid sm:grid-cols-2 gap-6`}>
             {job.skills.length > 0 && (
               <div>
-                <SectionLabel>Key skills</SectionLabel>
+                <h2 className="text-sm font-semibold text-zinc-900 mb-3">Key skills</h2>
                 <div className="flex flex-wrap gap-1.5">
                   {job.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="font-mono text-[11px] font-bold px-2 py-0.5 border border-ink-soft/50 text-ink"
+                      className="text-xs font-medium px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-600"
                     >
                       {skill}
                     </span>
@@ -133,11 +126,11 @@ export default async function JobDetailPage({
             )}
             {job.qualifications.length > 0 && (
               <div>
-                <SectionLabel>Qualifications</SectionLabel>
+                <h2 className="text-sm font-semibold text-zinc-900 mb-3">Qualifications</h2>
                 <ul className="space-y-1.5">
                   {job.qualifications.map((q) => (
-                    <li key={q} className="text-sm text-ink-soft leading-snug flex gap-2">
-                      <span className="text-rust" aria-hidden>—</span>
+                    <li key={q} className="text-sm text-zinc-600 leading-snug flex gap-2">
+                      <span className="text-zinc-300" aria-hidden>·</span>
                       <span>{q}</span>
                     </li>
                   ))}
@@ -149,10 +142,10 @@ export default async function JobDetailPage({
 
         {/* Contact email, when one was found in the posting */}
         {job.contactEmail && (
-          <div className="bg-cream border border-ink/25 shadow-card p-6 sm:p-7 flex items-center justify-between gap-4">
+          <div className={`${CARD_CLASS} flex items-center justify-between gap-4`}>
             <div className="min-w-0">
-              <SectionLabel>Contact email</SectionLabel>
-              <p className="font-mono text-sm font-bold text-ink truncate">{job.contactEmail}</p>
+              <h2 className="text-sm font-semibold text-zinc-900 mb-1">Contact email</h2>
+              <p className="text-sm text-zinc-600 truncate">{job.contactEmail}</p>
             </div>
             <CopyButton text={job.contactEmail} />
           </div>

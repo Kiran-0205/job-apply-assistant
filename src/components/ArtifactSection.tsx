@@ -8,6 +8,9 @@ import { CopyButton } from "@/components/CopyButton";
 export type ArtifactItem = {
   id: string;
   content: string;
+  // Model commentary (placeholders to fill, caveats) — shown apart from the
+  // message and never included in what gets copied.
+  notes: string | null;
   createdAt: string;
 };
 
@@ -41,7 +44,7 @@ function formatTimestamp(iso: string): string {
 }
 
 const ACTION_LINK_CLASS =
-  "font-mono text-[11px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 border border-ink-soft/50 text-ink hover:border-rust hover:text-rust transition-colors shrink-0";
+  "text-xs font-medium px-3 py-1.5 rounded-full border border-zinc-200 text-zinc-600 bg-white hover:border-indigo-300 hover:text-indigo-600 transition-colors shrink-0";
 
 export function ArtifactSection({
   jobId,
@@ -140,43 +143,49 @@ export function ArtifactSection({
     ) : null;
 
   return (
-    <div className="bg-cream border border-ink/25 shadow-card p-6 sm:p-7">
-      <div className="flex items-start justify-between mb-1.5 gap-3">
-        <div>
-          <h2 className="font-mono text-xs font-bold text-ink uppercase tracking-[0.3em]">
-            {title}
-          </h2>
-          <div className="w-10 h-0.5 bg-rust mt-2" aria-hidden />
-        </div>
+    <div className="bg-white border border-zinc-200/70 rounded-2xl p-6 sm:p-7 shadow-card">
+      <div className="flex items-center justify-between mb-1.5 gap-3">
+        <h2 className="text-sm font-semibold text-zinc-900">{title}</h2>
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           {linkedinAction}
           <button
             onClick={generate}
             disabled={generating}
-            className="px-3.5 py-1.5 bg-rust text-cream font-mono text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-rust-dark cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 shrink-0"
+            className="px-3.5 py-1.5 bg-zinc-900 text-white text-xs font-medium rounded-full hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 shrink-0"
           >
             {generating ? "Generating…" : buttonLabel}
           </button>
         </div>
       </div>
-      <p className="text-xs text-ink-soft mt-2 mb-5">{description}</p>
+      <p className="text-xs text-zinc-400 mb-5">{description}</p>
 
-      {error && <p className="mb-3 text-sm text-rust font-medium">{error}</p>}
+      {error && <p className="mb-3 text-sm text-rose-600">{error}</p>}
 
       {!selected ? (
-        <div className="border-2 border-dashed border-linen py-10 text-center">
-          <p className="font-mono text-xs text-ink-soft">
-            Nothing on record yet — click {buttonLabel} above.
+        <div className="border border-dashed border-zinc-200 rounded-xl py-10 text-center">
+          <p className="text-sm text-zinc-400">
+            Nothing generated yet — click {buttonLabel} above.
           </p>
         </div>
       ) : (
-        <div className="border border-linen p-4 sm:p-5 bg-paper shadow-[inset_2px_2px_6px_rgba(22,18,14,0.07)]">
+        <>
+        {selected.notes && (
+          <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-100 px-3.5 py-2.5">
+            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide shrink-0 mt-0.5">
+              Note for you
+            </span>
+            <p className="text-xs text-amber-800 whitespace-pre-wrap leading-relaxed">
+              {selected.notes}
+            </p>
+          </div>
+        )}
+        <div className="border border-zinc-100 rounded-xl p-4 sm:p-5 bg-zinc-50/70">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             {artifacts.length > 1 ? (
               <select
                 value={selected.id}
                 onChange={(e) => setSelectedId(e.target.value)}
-                className="font-mono text-[11px] font-bold uppercase border border-linen px-2 py-1 bg-cream text-ink focus:outline-none focus:border-rust"
+                className="text-xs font-medium border border-zinc-200 rounded-lg px-2 py-1 bg-white text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 {artifacts.map((a, i) => (
                   <option key={a.id} value={a.id}>
@@ -186,19 +195,18 @@ export function ArtifactSection({
                 ))}
               </select>
             ) : (
-              <span className="font-mono text-[11px] text-ink-soft">
-                {formatTimestamp(selected.createdAt)}
-              </span>
+              <span className="text-xs text-zinc-400">{formatTimestamp(selected.createdAt)}</span>
             )}
             <div className="flex gap-2 shrink-0 ml-auto">
               {extraAction}
               <CopyButton text={selected.content} />
             </div>
           </div>
-          <pre className="whitespace-pre-wrap text-sm text-ink font-mono leading-relaxed">
+          <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
             {selected.content}
           </pre>
         </div>
+        </>
       )}
     </div>
   );

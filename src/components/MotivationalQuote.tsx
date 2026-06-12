@@ -14,6 +14,8 @@ const QUOTES: [string, string][] = [
 const TYPE_SPEED = 45;
 const PAUSE_AFTER_TYPE = 1500;
 const SLASH_DURATION = 650;
+// How long the struck-out line stays on screen after the strike lands.
+const STRIKE_LINGER = 550;
 const REVEAL_DURATION = 700;
 const HOLD_DURATION = 4000;
 
@@ -52,7 +54,7 @@ export function MotivationalQuote() {
         timer = setTimeout(() => setPhase("slashing"), PAUSE_AFTER_TYPE);
         break;
       case "slashing":
-        timer = setTimeout(() => setPhase("revealing"), SLASH_DURATION);
+        timer = setTimeout(() => setPhase("revealing"), SLASH_DURATION + STRIKE_LINGER);
         break;
       case "revealing":
         timer = setTimeout(() => setPhase("holding"), REVEAL_DURATION);
@@ -70,40 +72,46 @@ export function MotivationalQuote() {
 
   return (
     <div
-      className="relative bg-coal px-5 py-7 sm:px-8 sm:py-8 overflow-hidden select-none shadow-panel"
+      className="relative bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl px-5 py-7 sm:px-8 sm:py-8 overflow-hidden select-none shadow-card"
       aria-hidden="true"
     >
-      {/* Corner ticks, like a printed form. */}
-      <span className="absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-flame" />
-      <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-flame" />
-      <span className="absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-flame" />
-      <span className="absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-flame" />
+      {/* Soft accent glow in the corner. */}
+      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-indigo-500/20 blur-3xl" />
 
       <div className="relative h-7 sm:h-9 flex items-center justify-center text-center">
         {showBefore && (
           <p
-            className={`absolute inset-0 flex items-center justify-center whitespace-nowrap font-mono text-sm sm:text-lg md:text-xl font-bold text-cream transition-opacity duration-300 ${
+            className={`absolute inset-0 flex items-center justify-center whitespace-nowrap text-sm sm:text-xl md:text-2xl font-semibold tracking-tight transition-opacity duration-300 ${
               phase === "revealing" ? "opacity-0" : "opacity-100"
             }`}
           >
-            {typed}
+            {/* Wrapping span keeps the strike sized to the text, not the card. */}
+            <span
+              className={`relative inline-block transition-colors duration-500 ${
+                showSlash ? "text-zinc-500" : "text-zinc-100"
+              }`}
+            >
+              {typed}
+              {showSlash && (
+                <span
+                  className="absolute -left-[3%] -right-[3%] top-1/2 h-[0.18em] -translate-y-1/2 bg-rose-500 origin-left rounded-full shadow-[0_0_14px_rgba(244,63,94,0.9)]"
+                  style={{
+                    animation: `strike-in ${SLASH_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1) forwards`,
+                  }}
+                />
+              )}
+            </span>
             {phase === "typing" && (
               <span
-                className="inline-block w-[2px] h-[0.9em] bg-flame ml-1"
+                className="inline-block w-[2px] h-[0.9em] bg-indigo-400 ml-1"
                 style={{ animation: "blink-cursor 0.9s steps(1) infinite" }}
-              />
-            )}
-            {showSlash && (
-              <span
-                className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 bg-flame origin-left shadow-[0_0_12px_rgba(194,85,64,0.7)]"
-                style={{ animation: `slash-sweep ${SLASH_DURATION}ms ease-out forwards` }}
               />
             )}
           </p>
         )}
         {showAfter && (
           <p
-            className="absolute inset-0 flex items-center justify-center whitespace-nowrap font-mono text-sm sm:text-lg md:text-xl font-bold text-flame"
+            className="absolute inset-0 flex items-center justify-center whitespace-nowrap text-sm sm:text-xl md:text-2xl font-semibold text-indigo-300 tracking-tight"
             style={{ animation: `rise-glow ${REVEAL_DURATION}ms ease-out forwards` }}
           >
             {after}

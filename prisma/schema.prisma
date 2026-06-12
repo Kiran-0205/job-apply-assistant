@@ -150,7 +150,8 @@ model Job {
 model GeneratedArtifact {
   id      String       @id @default(cuid())
   type    ArtifactType
-  content String       @db.Text // the generated draft text itself
+  content String       @db.Text // the send-ready message text, nothing else
+  notes   String?      @db.Text // model commentary (caveats, placeholders) shown apart from the message
 
   jobId String
   job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)

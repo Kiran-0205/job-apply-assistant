@@ -41,7 +41,7 @@ export function DeleteJobIcon({ jobId }: { jobId: string }) {
         onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
         aria-label="Delete job"
         title="Delete job"
-        className={`absolute -top-2 -right-2 z-10 w-6 h-6 flex items-center justify-center border border-linen bg-cream text-ink-soft hover:text-rust hover:border-rust cursor-pointer transition-all font-mono text-sm leading-none
+        className={`absolute -top-2 -right-2 z-10 w-6 h-6 flex items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm hover:text-rose-500 hover:border-rose-300 cursor-pointer transition-all text-sm leading-none
           ${confirming ? "opacity-0 pointer-events-none" : "opacity-0 group-hover:opacity-100"}`}
       >
         ×
@@ -50,22 +50,22 @@ export function DeleteJobIcon({ jobId }: { jobId: string }) {
       {/* Inline confirm pill */}
       <div
         ref={pillRef}
-        className={`absolute -top-3 -right-1 z-10 flex items-center gap-1 bg-cream border border-rust pl-2.5 pr-1 py-1 shadow-md transition-all duration-150 origin-right
+        className={`absolute -top-3 -right-1 z-10 flex items-center gap-1 bg-white border border-rose-200 rounded-full pl-2.5 pr-1 py-1 shadow-md transition-all duration-150 origin-right
           ${confirming ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"}`}
       >
-        <span className="font-mono text-[10px] font-bold text-rust uppercase tracking-[0.1em] whitespace-nowrap select-none">
+        <span className="text-[11px] font-medium text-rose-500 whitespace-nowrap select-none">
           Delete?
         </span>
         <button
           onClick={handleConfirm}
           disabled={loading}
-          className="font-mono text-[10px] font-bold uppercase text-cream bg-rust hover:bg-rust-dark disabled:opacity-50 px-2 py-0.5 cursor-pointer transition-colors"
+          className="text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 rounded-full px-2 py-0.5 cursor-pointer transition-colors"
         >
           {loading ? "…" : "Yes"}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
-          className="font-mono text-[10px] font-bold uppercase text-ink-soft hover:text-ink px-1.5 py-0.5 cursor-pointer transition-colors"
+          className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 rounded-full px-1.5 py-0.5 cursor-pointer transition-colors"
         >
           No
         </button>

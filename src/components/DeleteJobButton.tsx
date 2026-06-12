@@ -29,24 +29,22 @@ export function DeleteJobButton({ jobId }: { jobId: string }) {
   if (confirming) {
     return (
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[11px] text-ink-soft uppercase tracking-[0.1em]">
-          Close this case?
-        </span>
+        <span className="text-xs text-zinc-500">Delete this job?</span>
         <button
           onClick={deleteJob}
           disabled={loading}
-          className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 bg-rust text-cream hover:bg-rust-dark cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="text-xs font-medium px-3 py-1.5 rounded-full bg-rose-600 text-white hover:bg-rose-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Deleting…" : "Confirm"}
         </button>
         <button
           onClick={() => setConfirming(false)}
           disabled={loading}
-          className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 border border-ink-soft/50 text-ink-soft hover:border-ink hover:text-ink cursor-pointer transition-colors"
+          className="text-xs font-medium px-3 py-1.5 rounded-full border border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 cursor-pointer transition-colors"
         >
           Cancel
         </button>
-        {error && <p className="text-xs text-rust font-medium">{error}</p>}
+        {error && <p className="text-xs text-rose-600">{error}</p>}
       </div>
     );
   }
@@ -54,7 +52,7 @@ export function DeleteJobButton({ jobId }: { jobId: string }) {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 border border-rust/50 text-rust hover:bg-rust hover:text-cream cursor-pointer transition-colors"
+      className="text-xs font-medium px-3 py-1.5 rounded-full border border-zinc-200 text-zinc-500 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
     >
       Delete
     </button>

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 const FIELD_CLASS =
-  "w-full bg-paper border border-linen p-3 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-rust focus:ring-1 focus:ring-rust/40 transition-shadow";
+  "w-full bg-white border border-zinc-200 rounded-xl p-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 transition-shadow";
 
 function GoogleIcon() {
   return (
@@ -79,16 +79,16 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
       <button
         onClick={handleGoogle}
         type="button"
-        className="w-full flex items-center justify-center gap-2.5 border border-linen py-2.5 font-mono text-xs font-bold uppercase tracking-[0.12em] text-ink bg-paper hover:border-rust cursor-pointer transition-colors"
+        className="w-full flex items-center justify-center gap-2.5 border border-zinc-200 rounded-xl py-2.5 text-sm font-medium text-zinc-700 bg-white hover:bg-zinc-50 cursor-pointer transition-colors"
       >
         <GoogleIcon />
         Continue with Google
       </button>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-linen" />
-        <span className="font-mono text-[10px] text-ink-soft uppercase tracking-[0.2em]">or</span>
-        <div className="h-px flex-1 bg-linen" />
+        <div className="h-px flex-1 bg-zinc-200" />
+        <span className="text-xs text-zinc-400">or</span>
+        <div className="h-px flex-1 bg-zinc-200" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -119,12 +119,12 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
           required
         />
 
-        {error && <p className="text-sm text-rust font-medium">{error}</p>}
+        {error && <p className="text-sm text-rose-600">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-rust text-cream font-mono text-xs font-bold uppercase tracking-[0.25em] py-2.5 hover:bg-rust-dark cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
+          className="w-full bg-zinc-900 text-white text-sm font-medium rounded-xl py-2.5 hover:bg-indigo-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
         >
           {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>

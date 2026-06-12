@@ -14,10 +14,10 @@ export function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={copy}
-      className={`font-mono text-[11px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 border cursor-pointer transition-colors ${
+      className={`text-xs font-medium px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
         copied
-          ? "border-rust text-cream bg-rust"
-          : "border-ink-soft/50 text-ink bg-transparent hover:border-rust hover:text-rust"
+          ? "border-emerald-200 text-emerald-700 bg-emerald-50"
+          : "border-zinc-200 text-zinc-600 bg-white hover:border-zinc-300 hover:text-zinc-900"
       }`}
     >
       {copied ? "Copied" : "Copy"}
