@@ -42,7 +42,9 @@ async function llm(system: string, user: string): Promise<string> {
     config: {
       systemInstruction: system,
       maxOutputTokens: 2048,
-      thinkingConfig: { thinkingBudget: -1 },
+      // Thinking disabled: these are short, well-specified writing tasks, and
+      // dynamic thinking multiplied response latency for little quality gain.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   });
   return (response.text ?? "").trim();

@@ -24,11 +24,14 @@ export default async function JobDetailPage({
 }) {
   const { jobId } = await params;
 
-  const user = await getAppUser();
-  const job = await prisma.job.findUnique({
-    where: { id: jobId },
-    include: { artifacts: { orderBy: { createdAt: "desc" } } },
-  });
+  // Independent lookups — run them concurrently instead of back to back.
+  const [user, job] = await Promise.all([
+    getAppUser(),
+    prisma.job.findUnique({
+      where: { id: jobId },
+      include: { artifacts: { orderBy: { createdAt: "desc" } } },
+    }),
+  ]);
 
   if (!job) notFound();
 
