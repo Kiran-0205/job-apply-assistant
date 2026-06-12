@@ -11,6 +11,7 @@ interface JobContext {
   title: string | null;
   location: string | null;
   jdSummary: string | null;
+  externalJobId: string | null;
   applyMethod: string;
   contactEmail: string | null;
   portalUrl: string | null;
@@ -71,6 +72,7 @@ function jobContextBlock(job: JobContext): string {
   return `Company: ${job.company ?? "Unknown"}
 Role: ${job.title ?? "Unknown"}
 Location: ${job.location ?? "Unknown"}
+Job ID: ${job.externalJobId ?? "N/A"}
 Apply method: ${job.applyMethod}
 Contact email: ${job.contactEmail ?? "N/A"}
 Portal URL: ${job.portalUrl ?? "N/A"}
@@ -111,6 +113,7 @@ Write a short, friendly referral request (~150 words). Should:
 - Mention the specific role and company
 - Briefly say why the candidate is a fit
 - Ask directly but politely if the contact would be comfortable referring them
+- Include the job ID when one is provided — referrers usually need it for the internal form
 - Offer to share resume
 - Not be sycophantic or excessively long${templateInstruction(template)}${OUTPUT_FORMAT}`;
 
@@ -138,14 +141,26 @@ Keep it under 300 characters. Mention the role. Be specific, not generic.`;
 
 export type GenerateResult = { id: string; type: ArtifactType; content: string; notes: string | null };
 
+export class JobNotFoundError extends Error {
+  constructor() {
+    super("Job not found");
+  }
+}
+
 // Each artifact type is generated independently and on demand — the user
 // picks which materials they need for a given job, rather than us deciding
 // based on applyMethod.
-export async function generateArtifact(jobId: string, type: ArtifactType): Promise<GenerateResult> {
-  const job = await prisma.job.findUniqueOrThrow({
-    where: { id: jobId },
+export async function generateArtifact(
+  jobId: string,
+  type: ArtifactType,
+  userId: string
+): Promise<GenerateResult> {
+  // Scoped to the requesting user — a job id alone must not grant access.
+  const job = await prisma.job.findFirst({
+    where: { id: jobId, userId },
     include: { user: true },
   });
+  if (!job) throw new JobNotFoundError();
 
   const candidate = candidateBlock(job.user);
   if (!candidate.trim()) {
@@ -160,6 +175,7 @@ export async function generateArtifact(jobId: string, type: ArtifactType): Promi
     title: job.title,
     location: job.location,
     jdSummary: job.jdSummary,
+    externalJobId: job.externalJobId,
     applyMethod: job.applyMethod,
     contactEmail: job.contactEmail,
     portalUrl: job.portalUrl,

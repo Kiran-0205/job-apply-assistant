@@ -32,6 +32,27 @@ const BodySchema = z.union([
   z.object({ url: z.string().url("must be a valid URL") }),
 ]);
 
+// A bare URL pasted into the text tab still identifies a posting we may
+// already have — treat it the same as the URL tab for duplicate detection.
+const BARE_URL_RE = /^https?:\/\/\S+$/i;
+
+function candidateUrl(input: z.infer<typeof BodySchema>): string | null {
+  if ("url" in input) return input.url.trim();
+  const trimmed = input.message.trim();
+  return BARE_URL_RE.test(trimmed) ? trimmed : null;
+}
+
+// Re-pasting a link you already saved should land you on the existing job
+// instantly instead of re-fetching the page and re-running extraction.
+// Trailing slashes are the most common paste variation, so match both forms.
+async function findExisting(userId: string, url: string) {
+  const variants = [url, url.endsWith("/") ? url.slice(0, -1) : `${url}/`];
+  return prisma.job.findFirst({
+    where: { userId, sourceUrl: { in: variants } },
+    select: { id: true },
+  });
+}
+
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
@@ -49,6 +70,14 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await getAppUser();
+
+  const url = candidateUrl(parsed.data);
+  if (url) {
+    const existing = await findExisting(user.id, url);
+    if (existing) {
+      return NextResponse.json({ id: existing.id, duplicate: true }, { status: 200 });
+    }
+  }
 
   let ingested: Awaited<ReturnType<typeof ingest>>;
   try {

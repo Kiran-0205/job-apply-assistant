@@ -28,13 +28,13 @@ export function MotivationalQuote() {
 
   const [before, after] = QUOTES[quoteIndex];
 
-  // Type out the "before" line one character at a time.
+  // Type out the "before" line one character at a time. The reset happens in
+  // the first timer tick rather than synchronously in the effect body, so the
+  // effect never sets state directly (react-hooks/set-state-in-effect).
   useEffect(() => {
-    setTyped("");
-    setPhase("typing");
-
     let i = 0;
     const timer = setInterval(() => {
+      if (i === 0) setPhase("typing");
       i++;
       setTyped(before.slice(0, i));
       if (i >= before.length) {

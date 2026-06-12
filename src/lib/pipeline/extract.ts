@@ -11,6 +11,7 @@ const ExtractionSchema = z.object({
   title: z.string().nullable(),
   location: z.string().nullable(),
   jdSummary: z.string().nullable(),
+  externalJobId: z.string().nullable(),
   applyMethod: z.enum(["EMAIL", "PORTAL", "UNKNOWN"]),
   contactEmail: z.string().nullable(),
   portalUrl: z.string().nullable(),
@@ -28,6 +29,7 @@ Return ONLY a valid JSON object with these exact keys (use null for missing fiel
   "title": string | null,
   "location": string | null,
   "jdSummary": string | null,            // 2-3 sentence summary of the role
+  "externalJobId": string | null,         // the posting's job/requisition ID exactly as printed (e.g. "JR-10293", "R2024-441", "Job ID: 8841"). Look for labels like "Job ID", "Req ID", "Requisition", "Reference". null if none shown
   "applyMethod": "EMAIL" | "PORTAL" | "UNKNOWN",
   "contactEmail": string | null,          // set when applyMethod is EMAIL
   "portalUrl": string | null,            // set when applyMethod is PORTAL
@@ -48,7 +50,9 @@ async function callLLM(jobText: string): Promise<Extraction> {
     contents: jobText.slice(0, 15_000),
     config: {
       systemInstruction: SYSTEM_PROMPT,
-      maxOutputTokens: 1024,
+      // Long skills/qualifications lists were getting truncated at 1024,
+      // producing invalid JSON and a failed extraction.
+      maxOutputTokens: 2048,
     },
   });
 
@@ -103,6 +107,7 @@ export async function extractAndStore(
       title: extraction.title,
       location: extraction.location,
       jdSummary: extraction.jdSummary,
+      externalJobId: extraction.externalJobId,
       applyMethod: applyMethod as ApplyMethod,
       contactEmail: extraction.contactEmail,
       portalUrl: portalUrl,

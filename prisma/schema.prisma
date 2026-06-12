@@ -117,10 +117,11 @@ model Job {
   sourceUrl String?          // populated only when source = URL
 
   // --- structured fields, filled by the LLM extraction step ---
-  company   String?
-  title     String?
-  location  String?
-  jdSummary String? @db.Text // short normalized summary shown on the dashboard card
+  company       String?
+  title         String?
+  location      String?
+  jdSummary     String? @db.Text // short normalized summary shown on the dashboard card
+  externalJobId String? // requisition / job ID printed on the posting — referral asks and portal forms usually need it
 
   // Pulled out of the JD so they can be shown as their own glanceable lists
   // on the job detail page, instead of buried in the raw text.
@@ -145,6 +146,8 @@ model Job {
   updatedAt DateTime @updatedAt
 
   @@index([userId, applicationStatus]) // the dashboard's main query is "this user's jobs, filtered by status" — this composite index makes it fast instead of a full table scan
+  @@index([userId, createdAt]) // dashboard listing: this user's jobs, newest first
+  @@index([userId, sourceUrl]) // duplicate-URL check on ingest
 }
 
 model GeneratedArtifact {

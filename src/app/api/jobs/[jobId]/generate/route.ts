@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ArtifactType } from "@prisma/client";
-import { generateArtifact } from "@/lib/pipeline/generate";
+import { generateArtifact, JobNotFoundError } from "@/lib/pipeline/generate";
+import { getAppUser } from "@/lib/user";
 
 type RouteContext = { params: Promise<{ jobId: string }> };
 
 const VALID_TYPES = new Set<string>(["EMAIL_DRAFT", "REFERRAL_REQUEST", "CONNECTION_NOTE"]);
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
-  const { jobId } = await ctx.params;
+  const [user, { jobId }] = await Promise.all([getAppUser(), ctx.params]);
 
   let body: unknown;
   try {
@@ -22,11 +23,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   }
 
   try {
-    const result = await generateArtifact(jobId, type as ArtifactType);
+    const result = await generateArtifact(jobId, type as ArtifactType, user.id);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const message = (err as Error).message ?? "Unknown error";
-    const status = message.includes("No") ? 404 : 500;
+    const status = err instanceof JobNotFoundError ? 404 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

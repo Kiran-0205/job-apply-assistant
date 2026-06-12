@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArtifactType } from "@prisma/client";
 import { CopyButton } from "@/components/CopyButton";
@@ -56,6 +56,7 @@ export function ArtifactSection({
   contactEmail,
   company,
   school,
+  autoGenerate = false,
 }: {
   jobId: string;
   type: ArtifactType;
@@ -66,6 +67,9 @@ export function ArtifactSection({
   contactEmail?: string | null;
   company?: string | null;
   school?: string | null;
+  // Fire a generation on mount when the section is empty — used right after
+  // a job is added so materials are ready without any clicking.
+  autoGenerate?: boolean;
 }) {
   const router = useRouter();
   const [generating, setGenerating] = useState(false);
@@ -73,9 +77,14 @@ export function ArtifactSection({
   const [selectedId, setSelectedId] = useState<string | null>(artifacts[0]?.id ?? null);
 
   // When a fresh artifact arrives after a generation, default the picker to it.
-  useEffect(() => {
-    setSelectedId(artifacts[0]?.id ?? null);
-  }, [artifacts.length > 0 ? artifacts[0].id : null]);
+  // State is adjusted during render (not in an effect) per React's
+  // "you might not need an effect" guidance.
+  const latestId = artifacts[0]?.id ?? null;
+  const [prevLatestId, setPrevLatestId] = useState(latestId);
+  if (latestId !== prevLatestId) {
+    setPrevLatestId(latestId);
+    setSelectedId(latestId);
+  }
 
   async function generate() {
     setGenerating(true);
@@ -95,6 +104,19 @@ export function ArtifactSection({
       setGenerating(false);
     }
   }
+
+  // Auto-generate once per mount; the ref guards against StrictMode's double
+  // effect run. Only fires for empty sections, so a page reload after the
+  // artifact has been created won't generate again. Deferred to a microtask
+  // so the effect body itself doesn't set state synchronously.
+  const autoFired = useRef(false);
+  useEffect(() => {
+    if (autoGenerate && artifacts.length === 0 && !autoFired.current) {
+      autoFired.current = true;
+      queueMicrotask(generate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selected = artifacts.find((a) => a.id === selectedId) ?? artifacts[0] ?? null;
 
@@ -118,8 +140,10 @@ export function ArtifactSection({
   }
 
   // Independent of any generated content, so it's available right away.
+  // Connection notes are sent to people found the same way referrals are, so
+  // both sections get the people-search shortcuts.
   const linkedinAction =
-    type === "REFERRAL_REQUEST" && company ? (
+    (type === "REFERRAL_REQUEST" || type === "CONNECTION_NOTE") && company ? (
       <>
         <a
           href={linkedinSearch(company)}

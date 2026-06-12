@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ApplicationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAppUser } from "@/lib/user";
 import { AddJobForm } from "@/components/AddJobForm";
@@ -26,6 +27,22 @@ const METHOD_DOTS: Record<string, string> = {
   UNKNOWN: "bg-zinc-300",
 };
 
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  SAVED: "Saved",
+  DRAFTED: "Drafted",
+  APPLIED: "Applied",
+  INTERVIEW: "Interview",
+  CLOSED: "Closed",
+};
+
+const STATUS_BADGES: Record<ApplicationStatus, string> = {
+  SAVED: "bg-zinc-100 text-zinc-500",
+  DRAFTED: "bg-amber-50 text-amber-700",
+  APPLIED: "bg-indigo-50 text-indigo-700",
+  INTERVIEW: "bg-emerald-50 text-emerald-700",
+  CLOSED: "bg-zinc-100 text-zinc-400",
+};
+
 function initial(name: string | null): string {
   return (name?.trim()?.[0] ?? "?").toUpperCase();
 }
@@ -49,13 +66,46 @@ function relativeTime(date: Date): string {
   return "a while ago";
 }
 
-export default async function DashboardPage() {
-  const user = await getAppUser();
-  const jobs = await prisma.job.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: { artifacts: { select: { id: true }, orderBy: { createdAt: "desc" } } },
-  });
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const [user, { status }] = await Promise.all([getAppUser(), searchParams]);
+
+  const validStatuses = Object.values(ApplicationStatus);
+  const statusFilter = validStatuses.includes(status as ApplicationStatus)
+    ? (status as ApplicationStatus)
+    : undefined;
+
+  // Narrow select: rawText alone can be tens of KB per job, and the list
+  // renders none of it — fetching only card fields keeps this page fast as
+  // the job history grows.
+  const [jobs, statusCounts] = await Promise.all([
+    prisma.job.findMany({
+      where: { userId: user.id, ...(statusFilter ? { applicationStatus: statusFilter } : {}) },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        company: true,
+        title: true,
+        location: true,
+        jdSummary: true,
+        applyMethod: true,
+        applicationStatus: true,
+        createdAt: true,
+      },
+    }),
+    prisma.job.groupBy({
+      by: ["applicationStatus"],
+      where: { userId: user.id },
+      _count: true,
+    }),
+  ]);
+
+  const totalJobs = statusCounts.reduce((sum, s) => sum + s._count, 0);
+  const countFor = (s: ApplicationStatus) =>
+    statusCounts.find((c) => c.applicationStatus === s)?._count ?? 0;
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-10">
@@ -71,17 +121,52 @@ export default async function DashboardPage() {
           </div>
 
           <section>
-            <div className="flex items-baseline gap-2 mb-4">
+            <div className="flex items-baseline gap-2 mb-3">
               <h2 className="text-sm font-semibold text-zinc-900">Applications</h2>
-              {jobs.length > 0 && (
-                <span className="text-xs text-zinc-400">{jobs.length}</span>
+              {totalJobs > 0 && (
+                <span className="text-xs text-zinc-400">{totalJobs}</span>
               )}
             </div>
+
+            {/* Pipeline filter — counts come from all jobs, not the filtered list */}
+            {totalJobs > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                <Link
+                  href="/dashboard"
+                  className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                    !statusFilter
+                      ? "bg-zinc-900 text-white"
+                      : "bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+                  }`}
+                >
+                  All
+                </Link>
+                {Object.values(ApplicationStatus).map((s) => {
+                  const count = countFor(s);
+                  if (count === 0) return null;
+                  return (
+                    <Link
+                      key={s}
+                      href={`/dashboard?status=${s}`}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                        statusFilter === s
+                          ? "bg-zinc-900 text-white"
+                          : "bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+                      }`}
+                    >
+                      {STATUS_LABELS[s]} · {count}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
 
             {jobs.length === 0 ? (
               <div className="border border-dashed border-zinc-200 rounded-2xl py-16 text-center">
                 <p className="text-sm text-zinc-400">
-                  No jobs yet — paste a posting above to get started.
+                  {statusFilter
+                    ? `No ${STATUS_LABELS[statusFilter].toLowerCase()} jobs.`
+                    : "No jobs yet — paste a posting above to get started."}
                 </p>
               </div>
             ) : (
@@ -115,10 +200,17 @@ export default async function DashboardPage() {
                             {job.jdSummary}
                           </p>
                         )}
-                        <div className="flex items-center gap-1.5 mt-2.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${METHOD_DOTS[job.applyMethod]}`} aria-hidden />
-                          <span className="text-xs text-zinc-500 capitalize">
-                            {job.applyMethod.toLowerCase()}
+                        <div className="flex items-center gap-2.5 mt-2.5">
+                          <span className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${METHOD_DOTS[job.applyMethod]}`} aria-hidden />
+                            <span className="text-xs text-zinc-500 capitalize">
+                              {job.applyMethod.toLowerCase()}
+                            </span>
+                          </span>
+                          <span
+                            className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_BADGES[job.applicationStatus]}`}
+                          >
+                            {STATUS_LABELS[job.applicationStatus]}
                           </span>
                         </div>
                       </div>

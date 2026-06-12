@@ -37,7 +37,9 @@ export function AddJobForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
-      router.push(`/dashboard/jobs/${data.id}`);
+      // auto=1 tells the job page to start generating materials immediately.
+      // Skipped for duplicates — they already have (or deliberately lack) them.
+      router.push(`/dashboard/jobs/${data.id}${data.duplicate ? "" : "?auto=1"}`);
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);

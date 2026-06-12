@@ -5,6 +5,7 @@ import { getAppUser } from "@/lib/user";
 import { CopyButton } from "@/components/CopyButton";
 import { ArtifactSection, type ArtifactItem } from "@/components/ArtifactSection";
 import { DeleteJobButton } from "@/components/DeleteJobButton";
+import { StatusControls } from "@/components/StatusControls";
 import { ArtifactType } from "@prisma/client";
 import { splitArtifactContent } from "@/lib/artifact";
 
@@ -19,21 +20,41 @@ const CARD_CLASS =
 
 export default async function JobDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ jobId: string }>;
+  searchParams: Promise<{ auto?: string }>;
 }) {
-  const { jobId } = await params;
+  const [{ jobId }, { auto }] = await Promise.all([params, searchParams]);
 
   // Independent lookups — run them concurrently instead of back to back.
+  // Narrow select: rawText isn't rendered here and can be tens of KB.
   const [user, job] = await Promise.all([
     getAppUser(),
     prisma.job.findUnique({
       where: { id: jobId },
-      include: { artifacts: { orderBy: { createdAt: "desc" } } },
+      select: {
+        id: true,
+        userId: true,
+        company: true,
+        title: true,
+        location: true,
+        jdSummary: true,
+        externalJobId: true,
+        applyMethod: true,
+        contactEmail: true,
+        portalUrl: true,
+        skills: true,
+        qualifications: true,
+        applicationStatus: true,
+        referralStatus: true,
+        artifacts: { orderBy: { createdAt: "desc" } },
+      },
     }),
   ]);
 
-  if (!job) notFound();
+  // Ownership check: someone else's job id must look identical to a missing one.
+  if (!job || job.userId !== user.id) notFound();
 
   // Group artifacts by type, newest first (job.artifacts is already ordered desc)
   const artifactsByType: Record<ArtifactType, ArtifactItem[]> = {
@@ -52,6 +73,24 @@ export default async function JobDetailPage({
       createdAt: a.createdAt.toISOString(),
     });
   }
+
+  // ?auto=1 is set by the add-job redirect: kick off generation for the
+  // materials this posting actually calls for, without any clicking.
+  // Job-board postings with a recruiter email get the email draft; career-site
+  // postings get the referral message + connection note.
+  const autoRequested = auto === "1";
+  const autoEmail = autoRequested && job.applyMethod === "EMAIL";
+  const autoReferral = autoRequested && job.applyMethod !== "EMAIL";
+
+  // Which of the posting's skills the candidate already has — used to
+  // highlight overlap at a glance.
+  const profileSkills = new Set(
+    (user.skills ?? "")
+      .split(/[,;\n]/)
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const hasSkill = (skill: string) => profileSkills.has(skill.trim().toLowerCase());
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-10">
@@ -92,35 +131,65 @@ export default async function JobDetailPage({
           </div>
 
           {/* Apply info */}
-          {job.applyMethod === "PORTAL" && job.portalUrl && (
-            <div className="mt-5 pt-5 border-t border-zinc-100 text-sm">
-              <p className="truncate">
-                <span className="text-zinc-400">Apply via </span>
-                <a
-                  href={job.portalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline underline-offset-2 font-medium break-all"
-                >
-                  {job.portalUrl}
-                </a>
-              </p>
+          {((job.applyMethod === "PORTAL" && job.portalUrl) || job.externalJobId) && (
+            <div className="mt-5 pt-5 border-t border-zinc-100 text-sm space-y-2.5">
+              {job.applyMethod === "PORTAL" && job.portalUrl && (
+                <p className="truncate">
+                  <span className="text-zinc-400">Apply via </span>
+                  <a
+                    href={job.portalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:underline underline-offset-2 font-medium break-all"
+                  >
+                    {job.portalUrl}
+                  </a>
+                </p>
+              )}
+              {job.externalJobId && (
+                <div className="flex items-center justify-between gap-4">
+                  <p className="truncate">
+                    <span className="text-zinc-400">Job ID </span>
+                    <span className="font-medium text-zinc-700">{job.externalJobId}</span>
+                  </p>
+                  <CopyButton text={job.externalJobId} />
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Status tracking */}
+        <StatusControls
+          jobId={job.id}
+          applicationStatus={job.applicationStatus}
+          referralStatus={job.referralStatus}
+        />
 
         {/* Skills & qualifications */}
         {(job.skills.length > 0 || job.qualifications.length > 0) && (
           <div className={`${CARD_CLASS} grid sm:grid-cols-2 gap-6`}>
             {job.skills.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-zinc-900 mb-3">Key skills</h2>
+                <h2 className="text-sm font-semibold text-zinc-900 mb-3">
+                  Key skills
+                  {profileSkills.size > 0 && (
+                    <span className="ml-2 font-normal text-xs text-zinc-400">
+                      ✓ = on your profile
+                    </span>
+                  )}
+                </h2>
                 <div className="flex flex-wrap gap-1.5">
                   {job.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="text-xs font-medium px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-600"
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                        hasSkill(skill)
+                          ? "bg-indigo-50 text-indigo-700"
+                          : "bg-zinc-100 text-zinc-600"
+                      }`}
                     >
+                      {hasSkill(skill) && <span aria-hidden>✓ </span>}
                       {skill}
                     </span>
                   ))}
@@ -154,16 +223,7 @@ export default async function JobDetailPage({
           </div>
         )}
 
-        {/* Tailored email */}
-        <ArtifactSection
-          jobId={job.id}
-          type="EMAIL_DRAFT"
-          title="Tailored email"
-          description="A cold-application email written for this role, ready to send or paste into Gmail."
-          buttonLabel="Generate email"
-          artifacts={artifactsByType.EMAIL_DRAFT}
-          contactEmail={job.contactEmail}
-        />
+        
 
         {/* Referral message */}
         <ArtifactSection
@@ -175,6 +235,7 @@ export default async function JobDetailPage({
           artifacts={artifactsByType.REFERRAL_REQUEST}
           company={job.company}
           school={user.school}
+          autoGenerate={autoReferral}
         />
 
         {/* Connection request note */}
@@ -186,6 +247,21 @@ export default async function JobDetailPage({
           buttonLabel="Generate note"
           artifacts={artifactsByType.CONNECTION_NOTE}
           company={job.company}
+          school={user.school}
+          autoGenerate={autoReferral}
+        />
+
+
+        {/* Tailored email */}
+        <ArtifactSection
+          jobId={job.id}
+          type="EMAIL_DRAFT"
+          title="Tailored email"
+          description="A cold-application email written for this role, ready to send or paste into Gmail."
+          buttonLabel="Generate email"
+          artifacts={artifactsByType.EMAIL_DRAFT}
+          contactEmail={job.contactEmail}
+          autoGenerate={autoEmail}
         />
       </div>
     </main>
